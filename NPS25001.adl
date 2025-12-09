@@ -1,0 +1,79 @@
+info tt2l_analysis
+  title NPS-25-001
+  version nanoAODv9
+
+object tightElectrons
+  take Electron
+  select pt > 10
+  select abs(eta) < 2.5
+  select mvaFall17V2Iso_WP80 == 1
+  select abs(eta) ][ 1.4442 1.5560
+
+object tightMuons
+  take Muon
+  select pt > 10
+  select abs(eta) < 2.4
+  select CutBasedIdTight == 1
+  select pfIso < 0.25
+
+object selectedJets
+  take Jet
+  select pt > 30
+  select abs(eta) < 2.4
+  select jetId >= 2
+  select (pt > 50) or (puId >= 4)
+  reject any(dR(this, union(tightElectrons, tightMuons)) < 0.4)
+
+object bTaggedJets
+  take selectedJets
+  select btagDeepB > 0.2783
+
+define HT = sum(pT(selectedJets))
+
+composite ee_pair
+  take disjoint(tightElectrons e1, tightElectrons e2)
+  select e1.charge * e2.charge < 0
+  object dilepton_ee = e1 + e2
+
+composite mm_pair
+  take disjoint(tightMuons m1, tightMuons m2)
+  select m1.charge * m2.charge < 0
+  object dilepton_mm = m1 + m2
+
+composite em_pair
+  take disjoint(tightElectrons e, tightMuons m)
+  select e.charge * m.charge < 0
+  object dilepton_em = e + m
+
+region ee
+  select size(tightElectrons) == 2
+  select size(tightMuons) == 0
+  select dilepton_ee.mass > 20
+  reject dilepton_ee.mass [] 76 106
+  select MET_pt > 40
+  select HT > 300
+  select size(bTaggedJets) >= 2
+  select pT(tightElectrons[0]) > 30
+  select size(selectedJets) >= 4
+
+region mm
+  select size(tightMuons) == 2
+  select size(tightElectrons) == 0
+  select dilepton_mm.mass > 20
+  reject dilepton_mm.mass [] 76 106
+  select MET_pt > 40
+  select HT > 300
+  select size(bTaggedJets) >= 2
+  select pT(tightMuons[0]) > 30
+  select size(selectedJets) >= 4
+
+region em
+  select size(tightElectrons) == 1
+  select size(tightMuons) == 1
+  select dilepton_em.mass > 20
+  select MET_pt > 40
+  select HT > 300
+  select size(bTaggedJets) >= 2
+  select max(pT(tightElectrons[0]), pT(tightMuons[0])) > 30
+  select size(selectedJets) >= 4
+

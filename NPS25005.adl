@@ -1,0 +1,240 @@
+info boosted_higgs_adl
+   title NPS-25-005
+   version nanoAODv9
+
+object higgsAK8
+   take FatJet
+   select pt > 250
+   select abs(eta) < 2.4
+   select jetId == 6
+   select msoftdrop_nom > 20
+   select particleNetMD_Xbb > 0.85
+
+object topAK8
+   take FatJet
+   select pt > 300
+   select abs(eta) < 2.4
+   select jetId == 6
+   select particleNet_TvsQCD > 0.970
+   select msoftdrop_nom ][ 50 220
+
+object wzAK8
+   take FatJet
+   select pt > 50
+   select abs(eta) < 2.4
+   select jetId == 6
+   select particleNet_WZvsQCD > 0.9873
+   select msoftdrop_nom ][ 50 220
+
+object ak4Jets
+   take Jet
+   select pt > 30
+   select abs(eta) < 2.4
+   select jetId == 6
+   select (pt > 50) or (puId >= 4)
+   reject dR(this, higgsAK8) < 0.8
+   reject dR(this, wzAK8) < 0.8
+   reject dR(this, topAK8) < 0.8
+   reject dR(this, union(selectedMuons, selectedElectrons)) < 0.4
+
+object bTaggedAK4
+   take ak4Jets
+   select btagDeepB > 0.2783
+
+object selectedMuons
+   take Muon
+   select pt > 10
+   select abs(eta) < 2.4
+   select (mediumId == 1) or (highPtId == 1 and pt > 200)
+   select miniPFRelIso_all < 0.10
+   select abs(dxy) < 0.02
+   select abs(dz) < 0.1
+   reject dR(this, higgsAK8) < 0.8
+
+object triggerableMuons
+   take selectedMuons
+   select pt > 26
+
+object selectedElectrons
+take Electron
+select pt > 10
+select abs(eta) < 2.5
+reject abs(eta) ][ 1.44 1.57
+select (mvaFall17V2Iso_WP90 == 1) or (cutBased_HEEP == 1 and pt > 35)
+select abs(dxy) < 0.02
+select abs(dz) < 0.1
+reject dR(this, higgsAK8) < 0.8
+
+object triggerableElectrons
+   take selectedElectrons
+   select pt > 35
+   select (mvaFall17V2Iso_WP80 == 1) or (cutBased_HEEP == 1 and pt > 35)
+
+composite dijet
+   take disjoint(ak4Jets j1, ak4Jets j2)
+   select abs(j1.eta - j2.eta) > 2.2
+   select (j1 + j2).mass > 450
+   object vbf_dijet = j1 + j2
+
+composite ee_pair
+   take disjoint(selectedElectrons e1, selectedElectrons e2)
+   select e1.charge * e2.charge < 0
+   object dilepton_ee = e1 + e2
+
+composite mm_pair
+   take disjoint(selectedMuons m1, selectedMuons m2)
+   select m1.charge * m2.charge < 0
+   object dilepton_mm = m1 + m2
+
+composite em_pair
+   take disjoint(selectedElectrons e, selectedMuons m)
+   select e.charge * m.charge < 0
+   object dilepton_em = e + m
+
+region baseline
+   select size(higgsAK8) >= 1
+   select any(all(dR(higgsAK8, triggerElectrons) > 0.8) and all(dR(higgsAK8, triggerMuons) > 0.8))
+   select size(ak4Jets) >= 0
+
+region hadronic
+   take baseline
+   select size(triggerableElectrons) == 0
+   select size(triggerableMuons) == 0
+
+region Znunu
+   take hadronic
+   select MET_pt > 200
+   select abs(dphi(MET, higgsAK8)) > 1.57079632679
+   reject any(dR(bTaggedAK4, higgsAK8) [] 0.8 1.2)
+
+region tt0l
+   take hadronic
+   select MET_pt < 200
+   select any(dR(topAK8, higgsAK8) > 0.8)
+
+region Vjj
+   take hadronic
+   select size(wzAK8) >= 1
+   select any(dR(wzAK8, higgsAK8) > 0.8)
+   reject any(dR(bTaggedAK4, higgsAK8) [] 0.8 1.2)
+   select size(topAK8) == 0
+   select MET_pt < 200
+
+region VBFjj
+   take hadronic
+   select size(vbf_dijet) >= 1
+   reject any(dR(bTaggedAK4, higgsAK8) > 0.8)
+   select size(topAK8) == 0
+   select MET_pt < 200
+
+region VBFjj_highPurity
+   take VBFjj
+   select any((vbf_dijet).mass > 300 and abs(vbf_dijet.eta[0] - vbf_dijet.eta[1]) > 3.0)
+
+region VBFjj_highPt
+   take VBFjj
+   select pT(higgsAK8[0]) > 400
+
+region gg0l
+   take hadronic
+   reject any(dR(bTaggedAK4, higgsAK8) [] 0.8 1.2)
+   select size(topAK8) == 0
+   reject any(dR(wzAK8, higgsAK8) > 0.8)
+   select size(vbf_dijet) == 0
+   select MET_pt < 200
+
+region gg0l_highPurity
+   take gg0l
+   select pT(higgsAK8[0]) > 400
+   reject any(dR(bTaggedAK4, higgsAK8) [] 0.8 1.2)
+   select size(topAK8) == 0
+   reject any(dR(wzAK8, higgsAK8) > 0.8)
+   select size(vbf_dijet) == 0
+   select MET_pt < 200
+
+region leptonic
+   take baseline
+   select size(triggerElectrons) + size(triggerMuons) >= 1
+   reject any(dR(higgsAK8, triggerElectrons) < 0.8)
+   reject any(dR(higgsAK8, triggerMuons) < 0.8)
+
+region Zll
+   take leptonic
+   select size(dilepton_ee) + size(dilepton_mm) >= 1
+   select abs((dilepton_ee.mass - 90)) < 10 or abs((dilepton_mm.mass - 90)) < 10
+   select (dilepton_ee.pt > 150) or (dilepton_mm.pt > 150)
+   select size(higgsAK8) >= 1
+
+region Wlnu
+   take leptonic
+   select size(union(selectedElectrons, selectedMuons)) == 1
+   reject any(dR(union(selectedElectrons, selectedMuons), higgsAK8) < 0.8)
+   select size(bTaggedAK4) == 0
+   select abs(dphi(higgsAK8, W_lv)) > 3 * 3.141592653589793 / 4
+   select size(higgsAK8) >= 1
+
+region Wlnu_highPurity
+   take Wlnu
+   select size(union(selectedElectrons, selectedMuons)) == 1
+   select W_lv.pt > 300
+   select size(bTaggedAK4) == 0
+   select abs(dphi(higgsAK8, W_lv)) > 3 * 3.141592653589793 / 4
+   select size(higgsAK8) >= 1
+
+region ttlnu
+   take leptonic
+   select size(union(selectedElectrons, selectedMuons)) == 1
+   select size(bTaggedAK4) >= 1
+   select size(higgsAK8) >= 1
+
+region ttlnu_highPurity
+   take ttlnu
+   select size(union(selectedElectrons, selectedMuons)) == 1
+   select size(bTaggedAK4) >= 2
+   select size(higgsAK8) >= 1
+
+region ttlnu_lowPurity
+   take ttlnu
+   select size(union(selectedElectrons, selectedMuons)) == 1
+   select size(bTaggedAK4) == 1
+   select size(higgsAK8) >= 1
+
+region ttll
+   take leptonic
+   select size(dilepton_ee) + size(dilepton_mm) + size(dilepton_em) >= 1
+   select size(bTaggedAK4) >= 1
+   reject (size(dilepton_ee) == 1 and dilepton_ee.mass [] 81 101)
+   reject (size(dilepton_mm) == 1 and dilepton_mm.mass [] 81 101)
+   reject any(dilepton_ee.mass < 12)
+   reject any(dilepton_mm.mass < 12)
+   select size(higgsAK8) >= 1
+
+region final_gg0lVLo
+   take union(gg0l,VBFjj)
+   select pT(higgsAK8[0]) < 400
+
+region final_gg0lVHi
+   take union(gg0l,VBFjj)
+   select pT(higgsAK8[0]) >= 400
+
+region final_VBFjjLo
+   take VBFjj_highPurity
+   select pT(higgsAK8[0]) < 400
+
+region final_VBFjjHi
+   take VBFjj_highPurity
+   select pT(higgsAK8[0]) >= 400
+
+region final_VjjLo
+   take union(Vjj,tt0l)
+   #select pT(wzAK8) < 400) or in_region(tt0l)) # how ro apply an additional cut in only one of the regions?
+
+region final_VjjHi
+   take Vjj
+   select pT(wzAK8[0]) >= 400
+
+region final_LepHiT
+   take union(Znunu,Wlnu_highPurity,ttlnu_highPurity,Zll,ttll,tt0l)
+
+region final_LepLo
+   take union(Znunu,Wlnu,ttlnu_lowPurity)

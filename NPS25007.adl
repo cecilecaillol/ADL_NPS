@@ -1,0 +1,57 @@
+info multijet_btag_analysis
+  title NPS-25-007
+  version nanoAODv9
+
+object baseJets
+  take Jet
+  select pt > 30
+  select abs(eta) < 2.4
+  select jetId == 6
+  select (pt > 50) or (puId >= 4)
+
+object looseBJets
+  take baseJets
+  select btagDeepFlavB > 0.2783
+
+object mediumBJets
+  take baseJets
+  select btagDeepFlavB > 0.5
+
+object tightBJets
+  take baseJets
+  select btagDeepFlavB > 0.8
+
+object vetoElectrons
+  take Electron
+  select pt > 10
+  select abs(eta) < 2.4
+  select cutBased == 0
+
+object vetoMuons
+  take Muon
+  select abs(eta) < 2.4
+  select looseId == 1
+  select looseIsoId == 1
+
+region baseline
+  select size(vetoElectrons) == 0
+  select size(vetoMuons) == 0
+  select size(baseJets) >= 4
+  select size(baseJets) <= 6
+  select pT(baseJets[0]) > 300
+
+region SR312
+  take baseline
+  select size(mediumBJets) >= 2
+  select size(tightBJets) >= 1
+  select dR(mediumBJets[0], mediumBJets[1]) > 1.0
+
+region SR313
+  take baseline
+  select size(tightBJets) >= 3
+  select dR(tightBJets[0], tightBJets[1]) > 1.0
+
+region CR
+  take baseline
+  select size(looseBJets) == 0
+

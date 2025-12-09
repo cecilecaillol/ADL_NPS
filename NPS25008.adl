@@ -1,0 +1,102 @@
+info monojet
+  title NPS-25-008
+  version nanoAOD
+
+object looseMuons
+  take Muon
+  select pt > 10
+  select abs(eta) < 2.4
+  select pfRelIso04_all < 0.25
+
+object tightMuons
+  take looseMuons
+  select pt > 20
+  select pfRelIso04_all < 0.15
+
+object vetoElectrons
+  take Electron
+  select pt > 10
+  select abs(eta) < 2.5
+
+object tightElectrons
+  take vetoElectrons
+  select pt > 40
+
+object loosePhotons
+  take Photon
+  select pt > 20
+  select abs(eta) < 2.5
+  select cutBased >= 1
+
+object tightPhotons
+  take Photon
+  select pt > 230
+  select abs(eta) < 1.4442
+  select cutBased >= 3
+
+object tauCandidates
+  take Tau
+  select idDecayModeOldDMs == 1
+  select pT > 20
+  select abs(eta) < 2.5
+  select abs(dz) < 0.2
+  reject dR(this, tightElectrons) < 0.4
+  reject dR(this, tightMuons) < 0.4
+
+object selectedJets
+  take Jet
+  select pt > 30
+  select abs(eta) < 2.5
+
+define minDPhiJets_MET = min(abs(dphi(selectedJets[0:4], MET)))
+define dPMET = abs(MET_pt / MET_cal_pt - 1)
+define hadronicRecoil #FIXME hadronic recoil
+
+region baseline
+  select size(tauCandidates) == 0
+  reject size(bJets) > 0
+  select size(selectedJets) >= 1
+  select pT(selectedJets[0]) > 100
+
+region SR
+  take baseline
+  reject size(looseMuons) > 0
+  reject size(vetoElectrons) > 0
+  reject size(loosePhotons) > 0
+  select MET_pt > 250
+  select minDPhiJets_MET > 0.5
+  select dPMET < 0.5
+  select abs(dphi(MET, MET_charged)) < 2
+
+region dimuonCR
+  take baseline
+  reject size(looseMuons) == 0
+  select size(tightMuons) == 2
+  select tightMuons[0].charge * tightMuons[1].charge < 0
+  select (tightMuons[0] + tightMuons[1]).mass > 60
+  select (tightMuons[0] + tightMuons[1]).mass < 120
+  select hadronicRecoil > 250
+
+region dielectronCR
+  take baseline
+  select size(vetoElectrons) == 0
+  select size(tightElectrons) == 2
+  select tightElectrons[0].charge * tightElectrons[1].charge < 0
+  select (tightElectrons[0] + tightElectrons[1]).mass > 60
+  select (tightElectrons[0] + tightElectrons[1]).mass < 120
+
+region singleMuonCR
+  take baseline
+  select size(tightMuons) == 1
+  select transverse_mass(tightMuons[0], MET) < 160
+
+region singleElectronCR
+  take baseline
+  select size(tightElectrons) == 1
+  select transverse_mass(tightElectrons[0], MET) < 160
+  select MET_pt > 100
+
+region singlePhotonCR
+  take baseline
+  select size(tightPhotons) == 1
+

@@ -1,0 +1,51 @@
+info boosted_photon_jets
+  title NPS-25-006
+  version nanoAODv9
+
+object tightElectrons
+  take Electron
+  select pt > 10
+  select abs(eta) < 2.5
+  select cutBased == 4
+  select miniPFRelIso_all < 0.2
+
+object tightMuons
+  take Muon
+  select pt > 20
+  select abs(eta) < 2.2
+  select tightId == 1
+  select miniPFRelIso_all < 0.2
+
+object selectedPhotons
+  take Photon
+  select pt > 80
+  select abs(eta) < 2.4
+  select cutBased == 3
+
+object selectedJets
+  take Jet
+  select pt > 30
+  select abs(eta) < 5.0
+
+object barrelJets
+  take selectedJets
+  select abs(eta) < 2.4
+
+define HardMET_px = sum(px(selectedJets)) + sum(px(selectedPhotons))
+define HardMET_py = sum(py(selectedJets)) + sum(py(selectedPhotons))
+define HardMET_pt = sqrt(HardMET_px^2 + HardMET_py^2)
+define HardMET_phi = atan2(HardMET_py, HardMET_px)
+
+region baseline
+  select (HLT_DoublePhoton60 == 1) or (HLT_DoublePhoton70 == 1)
+  select size(selectedPhotons) >= 2
+  select any(abs(selectedPhotons.eta) < 1.4442) # at least one barrel photon
+  select size(barrelJets) >= 2
+  select HardMET_pt > 130
+  select abs(HardMET_pt - MET_pt) < 90
+  select min(sqrt(2 * pt(selectedJets) * HardMET_pt * (1 - cos(dphi(phi(selectedJets), HardMET_phi))))) > 40
+  select min(abs(dphi(selectedJets, vector(HardMET_pt, HardMET_phi)))) > 0.5
+  select size(tightElectrons) == 0
+  select size(tightMuons) == 0
+
+
