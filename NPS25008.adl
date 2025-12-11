@@ -2,35 +2,50 @@ info monojet
   title NPS-25-008
   version nanoAOD
 
+trigger HLTMETMHT
+  add HLT_PFMETNoMu120_PFMHTNoMu120_IDTight
+  add HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_PFHT60
+
+trigger HLTsingleEle
+  add HLT_Ele32_WPTight Gsf
+  add HLT_Ele115_CaloIdVT_GsfTrkIdT
+  add HLT_Photon200
+
+trigger HLTsinglePhoton
+  add HLT_Photon200
+
+trigger HLTsingleMu
+  add HLT_IsoMu24
+
 object looseMuons
   take Muon
-  select pt > 10
+  select pT > 10
   select abs(eta) < 2.4
   select pfRelIso04_all < 0.25
 
 object tightMuons
   take looseMuons
-  select pt > 20
+  select pT > 20
   select pfRelIso04_all < 0.15
 
 object vetoElectrons
   take Electron
-  select pt > 10
+  select pT > 10
   select abs(eta) < 2.5
 
 object tightElectrons
   take vetoElectrons
-  select pt > 40
+  select pT > 40
 
 object loosePhotons
   take Photon
-  select pt > 20
+  select pT > 20
   select abs(eta) < 2.5
   select cutBased >= 1
 
 object tightPhotons
   take Photon
-  select pt > 230
+  select pT > 230
   select abs(eta) < 1.4442
   select cutBased >= 3
 
@@ -45,58 +60,103 @@ object tauCandidates
 
 object selectedJets
   take Jet
-  select pt > 30
+  select pT > 30
   select abs(eta) < 2.5
 
-define minDPhiJets_MET = min(abs(dphi(selectedJets[0:4], MET)))
-define dPMET = abs(MET_pt / MET_cal_pt - 1)
-define hadronicRecoil #FIXME hadronic recoil
+object jetsmaskedECALveto
+  take selectedJets
+  select pT > 50
+  select -0.5 < eta < -0.1
+  select -2.1 < phi < -1.8
+  select neEmEF + chEmEF > 0.9
+  select dphi(Ak4Puppi, MET) < 2.9
+
+object jetvetomaps
+  take Jet
+  select tightID == 1
+  correction JES L123 (+L2L3 res)
+  select pT > 15
+  select abs(eta) < 4.7
+  select dR(Ak4Puppi, Muon) < 0.2
+
+object MET
+  take PuppiMET
+  correction Type1 on magnitude # is this standard, or is it applied at analysis level?
+  correction JES from jetsforMETcorr
+
+object trackMET
+  take TrackMET
+
+object caloMET
+  take CaloMET
+
+object U # recoil
+  take MET + leptons + photons
+
+region cleaning
+  select Flag_goodVertices
+  select Flag_globalSuperTightHalo2016Filter
+  select Flag_EcalDeadCellTriggerPrimitiveFilter
+  select Flag_BadPFMuonFilter
+  select Flag_BadPFMuonDzFilter
+  select Flag_hfNoisyHitsFilter
+  select Flag_eeBadScFilter
+  # Masked ECAL crystal veto
+  select events == 2022EE and pT(MET[0]) > 100 ? size(jetsmaskedECALveto) == 0
+  # Jet veto maps
+  select size(jetvetomaps) == 0
 
 region baseline
+  take cleaning
   select size(tauCandidates) == 0
-  reject size(bJets) > 0
+  select size(bJets) == 0
   select size(selectedJets) >= 1
   select pT(selectedJets[0]) > 100
+  select pT(U[0]) > 250
 
 region SR
   take baseline
+  trigger HLTMETMHT
   reject size(looseMuons) > 0
   reject size(vetoElectrons) > 0
   reject size(loosePhotons) > 0
-  select MET_pt > 250
-  select minDPhiJets_MET > 0.5
-  select dPMET < 0.5
-  select abs(dphi(MET, MET_charged)) < 2
+  select dR(jets[0:3], MET[0]) > 0.5
+  select (pT(MET[0]) - pT(caloMET[0])) / pT(U[0])
+  select dphi(MET[0], trackMET[0]) < 2
 
 region dimuonCR
   take baseline
-  reject size(looseMuons) == 0
+  reject size(vetoElectrons) == 0
   select size(tightMuons) == 2
   select tightMuons[0].charge * tightMuons[1].charge < 0
-  select (tightMuons[0] + tightMuons[1]).mass > 60
-  select (tightMuons[0] + tightMuons[1]).mass < 120
-  select hadronicRecoil > 250
+  select m(tightMuons[0] + tightMuons[1]) [] 60 120
 
 region dielectronCR
   take baseline
-  select size(vetoElectrons) == 0
   select size(tightElectrons) == 2
+  select size(looseMuons) == 0
   select tightElectrons[0].charge * tightElectrons[1].charge < 0
-  select (tightElectrons[0] + tightElectrons[1]).mass > 60
-  select (tightElectrons[0] + tightElectrons[1]).mass < 120
+  select m(tightElectrons[0] + tightElectrons[1]) [] 60 120
 
 region singleMuonCR
   take baseline
+  trigger HLTsingleMu
   select size(tightMuons) == 1
-  select transverse_mass(tightMuons[0], MET) < 160
+  select size(vetoElectrons) == 0
+  select transverse_mass(tightMuons[0], MET[0]) < 160
 
 region singleElectronCR
   take baseline
+  trigger HLTsingleEle
   select size(tightElectrons) == 1
-  select transverse_mass(tightElectrons[0], MET) < 160
-  select MET_pt > 100
+  select size(looseMuons) == 0
+  select transverse_mass(tightElectrons[0], MET[0]) < 160
+  select pT(MET[0]) > 100
 
 region singlePhotonCR
   take baseline
+  trigger HLTsinglePhoton
   select size(tightPhotons) == 1
+  select size(vetoElectrons) == 0
+  select size(looseMuons) == 0
 

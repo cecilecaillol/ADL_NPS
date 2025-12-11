@@ -45,7 +45,17 @@ composite em_pair
   select e.charge * m.charge < 0
   object dilepton_em = e + m
 
+region cleaning
+  select Flag_goodVertices
+  select Flag_globalSuperTightHalo2016Filter
+  select Flag_EcalDeadCellTriggerPrimitiveFilter
+  select Flag_BadPFMuonFilter
+  select Flag_BadPFMuonDzFilter
+  select Flag_hfNoisyHitsFilter
+  select Flag_eeBadScFilter
+
 region ee
+  take cleaning
   select size(tightElectrons) == 2
   select size(tightMuons) == 0
   select dilepton_ee.mass > 20
@@ -57,6 +67,7 @@ region ee
   select size(selectedJets) >= 4
 
 region mm
+  take cleaning
   select size(tightMuons) == 2
   select size(tightElectrons) == 0
   select dilepton_mm.mass > 20
@@ -68,6 +79,7 @@ region mm
   select size(selectedJets) >= 4
 
 region em
+  take cleaning
   select size(tightElectrons) == 1
   select size(tightMuons) == 1
   select dilepton_em.mass > 20

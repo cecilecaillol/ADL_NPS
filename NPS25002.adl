@@ -1,5 +1,11 @@
 info analysis_name "DM_dilepton_SR"
 
+trigger singleEle_HLT
+  add HLT_Ele30_WPTight_Gsf
+
+trigger singleMu_HLT
+  add HLT_IsoMu24
+
 object looseElectrons
   take Electron
   select pt > 10
@@ -45,26 +51,49 @@ object bjets
   take jets
   select deepFlavB_loose == 1
 
-# I made a new composite for generic lepton pairs, to use in the preselection.
-# I added the preselection criteria here, because there can be more than one 
-# option for an ll pair (given presel requires >= 2l), and we don't know which pair
-# will satisfy the criteria.  
-# If presel had ==2l, we could write all these criteria in a region, directly specifying 
-# leptons[0] and leptons[1], since there would only be one option.
-# This mix of object/composite level and event level selection criteria in papers / tables 
-# makes things confusing.
+object MET 
+  take PuppiMET
+
 composite ll_pair
   take disjoint(tightLeptons l1, tightLeptons l2)
   object dilepton_ll = l1+l2
   select m(dilepton_ll) [] 12 80 
   select pT(dilepton_ll) > 15 
-  select abs(dphi(dilepton_ll, PuppiMET)) >= 1
-  select cos(dphi(dilepton_ll[0],dilepton_ll[1])) >= 0.75
+  select abs(dphi(dilepton_ll, MET[0])) >= 1
+  select cos(dphi(l1,l2)) >= 0.75
 
 # Event selection
-region SR 
+
+region cleaning
+  select Flag_goodVertices
+  select Flag_globalSuperTightHalo2016Filter
+  select Flag_EcalDeadCellTriggerPrimitiveFilter
+  select Flag_BadPFMuonFilter
+  select Flag_BadPFMuonDzFilter
+  select Flag_hfNoisyHitsFilter
+  select Flag_eeBadScFilter
+
+region baseline
+  take cleaning 
   select size(looseLeptons) == 2 
-  select size(ll_pair) >= 1
+  select size(ll_pair) == 1
   select size(jets30) <= 1
   select size(bjets) == 0
+
+region SR_ee
+  take baseline
+  trigger singleEle_HLT
+  select abs(looseLeptons[0].pdgId) == 11 and abs(looseLeptons[1].pdgId) == 11
+
+region SR_mumu
+  take baseline
+  trigger singleMu_HLT
+  select abs(looseLeptons[0].pdgId) == 13 and abs(looseLeptons[1].pdgId) == 13
+
+region CR_emu
+  take baseline
+  trigger singleMu_HLT
+  select abs(looseLeptons[0].pdgId) +abs(looseLeptons[1].pdgId) == 24
+
+
 

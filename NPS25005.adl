@@ -91,7 +91,17 @@ composite em_pair
    select e.charge * m.charge < 0
    object dilepton_em = e + m
 
+region cleaning
+  select Flag_goodVertices
+  select Flag_globalSuperTightHalo2016Filter
+  select Flag_EcalDeadCellTriggerPrimitiveFilter
+  select Flag_BadPFMuonFilter
+  select Flag_BadPFMuonDzFilter
+  select Flag_hfNoisyHitsFilter
+  select Flag_eeBadScFilter
+
 region baseline
+   take cleaning
    select size(higgsAK8) >= 1
    select any(all(dR(higgsAK8, triggerElectrons) > 0.8) and all(dR(higgsAK8, triggerMuons) > 0.8))
    select size(ak4Jets) >= 0

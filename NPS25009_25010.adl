@@ -1,0 +1,196 @@
+info ADL_analysis
+  name VBF_Hbb_and_VH_categories
+  description VBF preselection and VH boosted/resolved categories with DeepJet and UParTAK4 tagging
+
+trigger vbf_HLT
+  add HLT_QuadPFJet105_88_76_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1
+  add HLT_QuadPFJet105_90_76_15_DoublePFBTagDeepCSV 1p3_7p7_VBF1
+
+trigger singlelep_HLT
+  add HLT_Ele30_WPTight_Gsf
+  add HLT_IsoMu24
+
+trigger doublelep_HLT
+  add HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL
+  add HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8
+
+trigger metmht_HLT
+  add HLT_PFMET120_PFMHT120_IDTight
+  add HLT_PFMET120_PFMHT120_IDTight_PFHT60
+  add HLT_PFMETNoMu120_PFMHTNoMu120_IDTight
+  add HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_FilterHF
+  add HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_PFHT60
+
+object looseElectrons
+  take Electron
+  select pt > 20
+  select abs(eta) < 2.5
+  select not (abs(eta) > 1.4442 and abs(eta) < 1.5660)
+  select cutBased >= 0
+  select pfRelIso03_all < 0.25
+
+object looseMuons
+  take Muon
+  select pt > 20
+  select abs(eta) < 2.4
+  select cutBasedId >= 1
+  select pfRelIso03_all < 0.25
+
+object tightElectrons
+  take looseElectrons
+  select cutBased >= 3
+  select pfRelIso03_all < 0.15
+
+object tightMuons
+  take looseMuons
+  select cutBasedId >= 2
+  select pfRelIso03_all < 0.15
+
+object tightLeptons
+  take union(tightElectrons, tightMuons)
+
+object looseLeptons
+  take union(looseElectrons, looseMuons)
+
+object jets
+  take Jet
+  select pt > 20
+  select abs(eta) < 4.7
+  select pfJetId >= 1
+  reject any(dR(this, tightLeptons) < 0.4)
+  select (pt >= 50) or pileupJetId >= 0
+
+object bjets_loose
+  take jets
+  select btagDeepFlavB > 0.0490
+  select abs(eta) < 2.4
+
+object bjets_med
+  take jets
+  select btagDeepFlavB > 0.2783
+  select abs(eta) < 2.4
+
+object nonBJets
+  take jets
+  select not (btagDeepFlavB > 0.0490)
+
+object doubleB_UParT
+  take Jet
+  select pt > 20
+  select btagUParTAK4probbb > 0.38
+
+object doubleB_UParT_loose
+  take Jet
+  select pt > 20
+  select btagUParTAK4probbb > 0.12
+
+object btagUParT_tight
+  take Jet
+  select pt > 20
+  select btagUParTAK4B > 0.4648
+
+object met
+  take MET
+
+composite bPairs
+  take disjoint(bjets_loose a, bjets_loose b)
+  object pair = a + b
+
+composite qqPair
+  take disjoint(qJets a, qJets b)
+  object pair = a + b
+
+region cleaning
+  select Flag_goodVertices
+  select Flag_globalSuperTightHalo2016Filter
+  select Flag_EcalDeadCellTriggerPrimitiveFilter
+  select Flag_BadPFMuonFilter
+  select Flag_BadPFMuonDzFilter
+  select Flag_hfNoisyHitsFilter
+  select Flag_eeBadScFilter
+
+region VBF_presel
+  take cleaning
+  trigger vbf_HLT
+  select size(looseLeptons) == 0
+  select size(jets) >= 5
+  select pT(jets[0]) >= 110
+  select pT(jets[1]) >= 90
+  select pT(jets[2]) >= 80
+  select pT(jets[3]) >= 30
+  select size(bjets_loose) >= 2
+  select size(nonBJets) >= 2
+  select abs(nonBJets[0].eta - nonBJets[1].eta) > 2.5
+  select m(nonBJets[0]+nonBJets[1]) > 250
+  select any(dphi(bPairs.pair) < 1.6) # how to use components of a composite object
+
+region VBF_3b_3j
+  take VBF_presel
+  select size(bjets_med) >= 3
+  select size(jets) == 3 + 2
+  select size(bjets_med) >= 3
+
+region VBF_3b_4j
+  take VBF_presel
+  select size(bjets_med) >= 3
+  select size(jets) == 4 + 2
+
+region VBF_4b_4j
+  take VBF_presel
+  select size(bjets_med) >= 4
+  select size(jets) == 4 + 2
+
+region VH_boosted_baseline
+  take cleaning
+  select size(doubleB_UParT) >= 2
+
+region VH_Znunu_boosted
+  take VH_boosted_baseline
+  trigger metmht_HLT
+  select size(tightLeptons) == 0
+  select pT(met) > 25
+
+region VH_Wlnu_boosted
+  take VH_boosted_baseline
+  trigger singlelep_HLT
+  select size(tightLeptons) == 1
+  select pT(met) > 25
+
+region VH_Zll_boosted
+  take VH_boosted_baseline
+  trigger doublelep_HLT
+  select size(tightLeptons) >= 2
+  select tightLeptons[0].charge + tightLeptons[1].charge == 0
+  select abs(tightLeptons[0].pdgId) == abs(tightLeptons[1].pdgId)
+  select m(tightLeptons[0]+tightLeptons[1]) [] 80 100
+  select size(doubleB_UParT) >= 2
+  select doubleB_UParT[0].btagUParTAK4probbb > 0.38
+  select doubleB_UParT[0].btagUParTAK4probbb > 0.12
+
+region VH_resolved_baseline
+  select size(btagUParT_tight)>=3
+
+region VH_Znunu_resolved
+  take VH_resolved_baseline
+  trigger metmht_HLT
+  select size(looseLeptons) == 0
+  select pass("HLT_MET") or pass("HLT_MHT")
+  select met.pt > 170
+  select min(dPhi(jets, met)) > 0.5
+
+region VH_Wlnu_resolved
+  VH_resolved_baseline
+  trigger singlelep_HLT
+  select size(tightLeptons) == 1
+  select met.pt > 50
+
+region VH_Zll_resolved
+  VH_resolved_baseline
+  trigger doublelep_HLT
+  select size(tightLeptons) >= 2
+  select pass("HLT_doubleEle") or pass("HLT_doubleMu")
+  select (sort(tightLeptons, pt)[0].charge + sort(tightLeptons, pt)[1].charge) == 0
+  select abs(sort(tightLeptons, pt)[0].pdgId) == abs(sort(tightLeptons, pt)[1].pdgId)
+  select (sort(tightLeptons, pt)[0] + sort(tightLeptons, pt)[1]).mass >= 80
+  select (sort(tightLeptons, pt)[0] + sort(tightLeptons, pt)[1]).mass <= 100
+

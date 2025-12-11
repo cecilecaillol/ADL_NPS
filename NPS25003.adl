@@ -1,5 +1,3 @@
-# ADL file for the h->a1a2->(bb)bbtautau analysis based on NanoAODv9
-
 info analysis
   title "h->a1a2->(bb)bbtautau"
   experiment CMS
@@ -8,15 +6,12 @@ info analysis
   lumi 138.0
 
 info adl
-  inputformat NanoAODv9 # https://cms-nanoaod-integration.web.cern.ch/autoDoc/NanoAODv9/2017UL/doc_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_RunIISummer20UL17NanoAODv9-106X_mc2017_realistic_v9-v1.html
+  inputformat NanoAODv9 
   adlauthor Cecile Caillol
 
-# -------------------------
-# Loose preselection objects (NanoAODv9 names)
-# -------------------------
 object muons_loose
   take Muon
-  select pt > 10
+  select pT > 10
   select abs(eta) < 2.4
   select mediumId == true
   select abs(dz) < 0.2
@@ -25,7 +20,7 @@ object muons_loose
 
 object electrons_loose
   take Electron
-  select pt > 10
+  select pT > 10
   select abs(eta) < 2.5
   select abs(dz) < 0.2
   select abs(dxy) < 0.045
@@ -36,7 +31,7 @@ object electrons_loose
 
 object taus_loose
   take Tau
-  select pt > 10
+  select pT > 10
   select abs(eta) < 2.3
   select abs(dz) < 0.2
   select idDeepTau2017v2p1VSe >= 1   
@@ -48,98 +43,89 @@ object taus_loose
 
 object jets_loose
   take Jet
-  select pt > 18
+  select pT > 18
   select abs(eta) < 4.7
   select jetId >= 2
   reject any(dR(this, muons_loose) < 0.4)
   reject any(dR(this, electrons_loose) < 0.4)
   reject any(dR(this, taus_loose) < 0.4)
 
-# -------------------------
-# Offline tightened objects (only incremental/tighter cuts)
-# -------------------------
-# ##h channel
 object muons_muTau_offline
   take muons_loose
-  select pt > 19
+  select pT > 19
   select pfRelIso04_all < 0.15
 
 object taus_muTau_offline
   take taus_loose
-  select pt > 18
+  select pT > 18
   select idDeepTau2017v2p1VSe >= 2   
   select idDeepTau2017v2p1VSmu >= 3  
   select idDeepTau2017v2p1VSjet >= 1 
 
-# e#h channel
 object electrons_eTau_offline
   take electrons_loose
-  select pt > 20
+  select pT > 20
   select mvaFall17V2noIso_WP90 == true
   select pfRelIso03_all < 0.15
 
 object taus_eTau_offline
   take taus_loose
-  select pt > 18
+  select pT > 18
   select idDeepTau2017v2p1VSe >= 3   
   select idDeepTau2017v2p1VSmu >= 1  
   select idDeepTau2017v2p1VSjet >= 1 
 
-# e# channel
 object electrons_eMu_offline
   take electrons_loose
-  select pt > 13
+  select pT > 13
   select mvaFall17V2noIso_WP90 == true
   select pfRelIso03_all < 0.3
 
 object muons_eMu_offline
   take muons_loose
-  select pt > 13
+  select pT > 13
   select pfRelIso04_all < 0.3
 
-# -------------------------
-# Pair building + leading-pair selection
-# -------------------------
-# ##h: require #R>0.4 between muon and tau
 composite muTau_pairs
-  take union(muons_muTau_offline, taus_muTau_offline)
-  select (this.first in muons_muTau_offline and this.second in taus_muTau_offline)
-  select dR(this.first, this.second) > 0.4
-  sort muTau_pairs by (this.first.pfRelIso04_all, -this.first.pt, this.second.idDeepTau2017v2p1VSjet) 
+  take disjoint(muons_muTau_offline l1, taus_muTau_offline l2)
+  select dR(l1, l2) > 0.4
+  object muTau = l1+l2
 
-# e#h: require #R>0.4 between electron and tau
 composite eTau_pairs
-  take union(electrons_eTau_offline, taus_eTau_offline)
-  select (this.first in electrons_eTau_offline and this.second in taus_eTau_offline)
-  select dR(this.first, this.second) > 0.4
-  sort eTau_pairs by (this.first.pfRelIso03_all, -this.first.pt, this.second.idDeepTau2017v2p1VSjet)
+  take disjoint(electrons_eTau_offline l1, taus_eTau_offline l2)
+  select dR(l1, l2) > 0.4
+  object eTau = l1+l2
 
-# e#: require #R>0.3 between electron and muon
 composite eMu_pairs
-  take union(electrons_eMu_offline, muons_eMu_offline)
-  select (this.first in electrons_eMu_offline and this.second in muons_eMu_offline)
-  select dR(this.first, this.second) > 0.3
-  sort eMu_pairs by (this.first.pfRelIso03_all, -this.first.pt, this.second.pfRelIso04_all)
+  take disjoint(electrons_eMu_offline l1, muons_emu_offline l2)
+  select dR(l1, l2) > 0.4
+  object eMu = l1+l2
 
-# -------------------------
-# Signal regions (non-overlapping by construction)
-# -------------------------
+region cleaning
+  select Flag_goodVertices
+  select Flag_globalSuperTightHalo2016Filter
+  select Flag_EcalDeadCellTriggerPrimitiveFilter
+  select Flag_BadPFMuonFilter
+  select Flag_BadPFMuonDzFilter
+  select Flag_hfNoisyHitsFilter
+  select Flag_eeBadScFilter
 
 region SR_muTau
+  take cleaning
   select size(muons_loose) >= 1
   select size(electrons_loose) == 0
-  select size(muTau_pairs) >= 1
+  select size(muTau) >= 1
 
 region SR_eTau
+  take cleaning
   select size(muons_loose) == 0
   select size(electrons_loose) >= 1
-  select size(eTau_pairs) >= 1
+  select size(eTau) >= 1
 
 region SR_eMu
+  take cleaning
   select size(muons_loose) >= 1
   select size(electrons_loose) >= 1
-  select size(eMu_pairs) >= 1
-
-# End of ADL
+  select size(eMu) >= 1
 
 

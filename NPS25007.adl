@@ -33,7 +33,17 @@ object vetoMuons
   select looseId == 1
   select looseIsoId == 1
 
+region cleaning
+  select Flag_goodVertices
+  select Flag_globalSuperTightHalo2016Filter
+  select Flag_EcalDeadCellTriggerPrimitiveFilter
+  select Flag_BadPFMuonFilter
+  select Flag_BadPFMuonDzFilter
+  select Flag_hfNoisyHitsFilter
+  select Flag_eeBadScFilter
+
 region baseline
+  take cleaning
   select size(vetoElectrons) == 0
   select size(vetoMuons) == 0
   select size(baseJets) >= 4
