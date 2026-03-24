@@ -1,162 +1,143 @@
-info monojet
-  title NPS-25-008
-  version nanoAOD
+info NPS25008
+  title "Monojet plus missing energy search"
+  cadi "NPS-25-008"
+  version "nanoAODv9"
 
-trigger HLTMETMHT
-  add HLT_PFMETNoMu120_PFMHTNoMu120_IDTight
-  add HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_PFHT60
+define mu_looseId = extern "Muon_looseId"
+define mu_tightId = extern "Muon_tightId"
+define mu_iso = extern "Muon_pfRelIso04_all"
 
-trigger HLTsingleEle
-  add HLT_Ele32_WPTight Gsf
-  add HLT_Ele115_CaloIdVT_GsfTrkIdT
-  add HLT_Photon200
+define ele_vetoId = extern "Electron_cutBased"
+define ele_tightId = extern "Electron_cutBased"
 
-trigger HLTsinglePhoton
-  add HLT_Photon200
+define tau_decay = extern "Tau_idDecayModeOldDMs"
+define tau_deep = extern "Tau_idDeepTau2018v2p5VSjet"
 
-trigger HLTsingleMu
-  add HLT_IsoMu24
+define pho_looseId = extern "Photon_cutBased"
+define pho_tightId = extern "Photon_cutBased"
+
+define btag = extern "Jet_btagDeepFlavB"
+
+define chHEF = extern "sortedJets_chHEF"
+define neHEF = extern "sortedJets_neHEF"
+
+define metcal = extern "CaloMET_pt"
 
 object looseMuons
   take Muon
-  select pT > 10
-  select abs(eta) < 2.4
-  select pfRelIso04_all < 0.25
+  select pt(this) > 10
+  select abs(eta(this)) < 2.4
+  select mu_looseId == 1
+  select mu_iso < 0.25
 
 object tightMuons
   take looseMuons
-  select pT > 20
-  select pfRelIso04_all < 0.15
+  select pt(this) > 20
+  select mu_iso < 0.15
+  select mu_tightId == 1
 
 object vetoElectrons
   take Electron
-  select pT > 10
-  select abs(eta) < 2.5
+  select pt(this) > 10
+  select abs(eta(this)) < 2.5
+  select ele_vetoId >= 1
 
 object tightElectrons
   take vetoElectrons
-  select pT > 40
+  select pt(this) > 40
+  select ele_tightId >= 4
+
+object taus
+  take Tau
+  select pt(this) > 20
+  select abs(eta(this)) < 2.5
+  select abs(dz(this)) < 0.2
+  select tau_decay == 1
+  select tau_deep >= 4
+  reject any(dR(this, tightMuons)) < 0.4
+  reject any(dR(this, tightElectrons)) < 0.4
 
 object loosePhotons
   take Photon
-  select pT > 20
-  select abs(eta) < 2.5
-  select cutBased >= 1
+  select pt(this) > 20
+  select abs(eta(this)) < 2.5
+  select pho_looseId >= 1
 
 object tightPhotons
   take Photon
-  select pT > 230
-  select abs(eta) < 1.4442
-  select cutBased >= 3
+  select pt(this) > 230
+  select abs(eta(this)) < 1.4442
+  select pho_tightId >= 3
 
-object tauCandidates
-  take Tau
-  select idDecayModeOldDMs == 1
-  select pT > 20
-  select abs(eta) < 2.5
-  select abs(dz) < 0.2
-  reject dR(this, tightElectrons) < 0.4
-  reject dR(this, tightMuons) < 0.4
-
-object selectedJets
+object jets
   take Jet
-  select pT > 30
-  select abs(eta) < 2.5
+  select pt(this) > 30
+  select abs(eta(this)) < 2.5
 
-object jetsmaskedECALveto
-  take selectedJets
-  select pT > 50
-  select -0.5 < eta < -0.1
-  select -2.1 < phi < -1.8
-  select neEmEF + chEmEF > 0.9
-  select dphi(Ak4Puppi, MET) < 2.9
+object bjets
+  take jets
+  select btag > 0.2783
 
-object jetvetomaps
-  take Jet
-  select tightID == 1
-  correction JES L123 (+L2L3 res)
-  select pT > 15
-  select abs(eta) < 4.7
-  select dR(Ak4Puppi, Muon) < 0.2
+object sortedJets : sort(jets, pt(jets), descend)
 
-object MET
-  take PuppiMET
-  correction Type1 on magnitude # is this standard, or is it applied at analysis level?
-  correction JES from jetsforMETcorr
+object ptmiss
+  take MET
 
-object trackMET
-  take TrackMET
+object recoil : union(ptmiss, tightMuons, tightElectrons, tightPhotons)
 
-object caloMET
-  take CaloMET
+composite dimuon
+  take disjoint(tightMuons m1, tightMuons m2)
+  candidate ll = m1 + m2
 
-object U # recoil
-  take MET + leptons + photons
-
-region cleaning
-  select Flag_goodVertices
-  select Flag_globalSuperTightHalo2016Filter
-  select Flag_EcalDeadCellTriggerPrimitiveFilter
-  select Flag_BadPFMuonFilter
-  select Flag_BadPFMuonDzFilter
-  select Flag_hfNoisyHitsFilter
-  select Flag_eeBadScFilter
-  # Masked ECAL crystal veto
-  select events == 2022EE and pT(MET[0]) > 100 ? size(jetsmaskedECALveto) == 0
-  # Jet veto maps
-  select size(jetvetomaps) == 0
+composite dielectron
+  take disjoint(tightElectrons e1, tightElectrons e2)
+  candidate ll = e1 + e2
 
 region baseline
-  take cleaning
-  select size(tauCandidates) == 0
-  select size(bJets) == 0
-  select size(selectedJets) >= 1
-  select pT(selectedJets[0]) > 100
-  select pT(U[0]) > 250
+  select pt(ptmiss[0]) > 250
+  select pt(sortedJets[0]) > 100
+  select abs(eta(sortedJets[0])) < 2.5
+  #select chHEF(sortedJets[0]) > 0.1
+  #select neHEF(sortedJets[0]) < 0.8
+  select size(bjets) == 0
+  select min(dphi(jets[:4], ptmiss[0])) > 0.5
+  select abs(pt(ptmiss[0]) / metcal - 1) < 0.5
+  select abs(dphi(ptmiss[0], ptmiss[0])) < 2
 
 region SR
   take baseline
-  trigger HLTMETMHT
-  reject size(looseMuons) > 0
-  reject size(vetoElectrons) > 0
-  reject size(loosePhotons) > 0
-  select dR(jets[0:3], MET[0]) > 0.5
-  select (pT(MET[0]) - pT(caloMET[0])) / pT(U[0])
-  select dphi(MET[0], trackMET[0]) < 2
-
-region dimuonCR
-  take baseline
-  reject size(vetoElectrons) == 0
-  select size(tightMuons) == 2
-  select tightMuons[0].charge * tightMuons[1].charge < 0
-  select m(tightMuons[0] + tightMuons[1]) [] 60 120
-
-region dielectronCR
-  take baseline
-  select size(tightElectrons) == 2
   select size(looseMuons) == 0
-  select tightElectrons[0].charge * tightElectrons[1].charge < 0
-  select m(tightElectrons[0] + tightElectrons[1]) [] 60 120
+  select size(vetoElectrons) == 0
+  select size(taus) == 0
+  select size(loosePhotons) == 0
 
-region singleMuonCR
+region CR_dimuon
   take baseline
-  trigger HLTsingleMu
+  select size(dimuon->ll) == 1
+  select charge(tightMuons[0]) + charge(tightMuons[1]) == 0
+  select pt(tightMuons[0]) > 20
+  select pt(tightMuons[1]) > 10
+  select 60 < mass(dimuon->ll[0]) < 120
+
+region CR_dielectron
+  take baseline
+  select size(dielectron->ll) == 1
+  select charge(tightElectrons[0]) + charge(tightElectrons[1]) == 0
+  select pt(tightElectrons[0]) > 40
+  select pt(tightElectrons[1]) > 10
+  select 60 < mass(dielectron->ll[0]) < 120
+
+region CR_singlemu
+  take baseline
   select size(tightMuons) == 1
-  select size(vetoElectrons) == 0
-  select transverse_mass(tightMuons[0], MET[0]) < 160
+  select sqrt(2*pt(tightMuons[0])*pt(met[0])*(1 - cos(dphi(tightMuons[0], ptmiss[0])))) < 160
 
-region singleElectronCR
+region CR_singleelectron
   take baseline
-  trigger HLTsingleEle
   select size(tightElectrons) == 1
-  select size(looseMuons) == 0
-  select transverse_mass(tightElectrons[0], MET[0]) < 160
-  select pT(MET[0]) > 100
+  select pt(ptmiss[0]) > 100
+  select sqrt(2*pt(tightElectrons[0])*pt(met[0])*(1 - cos(dphi(tightElectrons[0], ptmiss[0])))) < 160
 
-region singlePhotonCR
+region CR_photon
   take baseline
-  trigger HLTsinglePhoton
   select size(tightPhotons) == 1
-  select size(vetoElectrons) == 0
-  select size(looseMuons) == 0
-

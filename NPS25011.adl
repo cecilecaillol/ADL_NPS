@@ -1,214 +1,181 @@
-info ADL_analysis
-  name VLL in 2LSS, 3L, and 4L
-  description Analysis selecting 2LSS, 3L, 4L final states with signal and control regions
+info Multilepton
+  title "Multilepton analysis"
+  an "AN-ML-001"
+  cadi "ML-001"
+  version "nanoAODv9"
+
+define muMediumId = extern "looseMuons_mediumId"
+define muLooseId = extern "Muon_looseId"
+define muIso = extern "Muon_pfRelIso03_all"
+define muIso2 = extern "looseMuons_pfRelIso03_all"
+define eleMediumId = extern "looseElectrons_cutBased"
+define eleVetoId = extern "Electron_cutBased"
+define eleIso = extern "Electron_pfRelIso03_all"
+define eleIso2 = extern "looseElectrons_pfRelIso03_all"
+define jetId = extern "Jet_jetId"
+define btagDeepJet = extern "jets_btagDeepFlavB"
 
 object looseMuons
   take Muon
-  select pt > 10
-  select abs(eta) < 2.4
-  select pfRelIso03_all < 1.0
-  select abs(dxy) < 0.05
-  select abs(dz) < 0.1
-  select looseId == 1
+  select pt(this) > 10
+  select abs(eta(this)) < 2.4
+  select muLooseId == 1
+  select muIso < 1.0
+  select abs(dxy(this)) < 0.05
+  select abs(dz(this)) < 0.1
 
-object tightMuons
+object muons
   take looseMuons
-  select pfRelIso03_all < 0.15
-  select mediumId ==1
+  select muMediumId == 1
+  select muIso2 < 0.15
 
 object looseElectrons
   take Electron
-  select pt > 10
-  select abs(eta) < 2.4
-  select pfRelIso03_all < 1.0
-  select (abs(eta) < 1.479 and abs(dxy) < 0.05 and abs(dz) < 0.1) or (abs(eta) >= 1.479 and abs(dxy) < 0.1 and abs(dz) < 0.2)
-  select cutBased >= 0
-  reject any(dR(this, looseMuons) < 0.05)
+  select pt(this) > 10
+  select abs(eta(this)) < 2.4
+  select eleVetoId >= 1
+  select eleIso < 1.0
+  select (abs(eta(this)) < 1.479 and abs(dxy(this)) < 0.05 and abs(dz(this)) < 0.1) or (abs(eta(this)) >= 1.479 and abs(dxy(this)) < 0.1 and abs(dz(this)) < 0.2)
+  reject any(dR(this, looseMuons)) < 0.05
 
-object tightElectrons
+object electrons
   take looseElectrons
-  select pfRelIso03_all < 0.15
-  select cutBased >= 3
+  select eleMediumId >= 3
+  select eleIso2 < 0.15
+
+object leptons: union(electrons, muons)
 
 object jets
   take Jet
-  select pt > 50
-  select abs(eta) < 2.4
-  select pfJetId >= 2
-  reject any(dR(this, looseMuons) < 0.5)
-  reject any(dR(this, looseElectrons) < 0.5)
+  select pt(this) > 50
+  select abs(eta(this)) < 2.4
+  select jetId >= 2
+  reject any(dR(this, looseMuons)) < 0.5
+  reject any(dR(this, looseElectrons)) < 0.5
 
 object bjets
   take jets
-  select btagDeepFlavB > 0.2783
+  select btagDeepJet > 0.2783
 
-object met
-  take MET
+object ptmiss
+  take PuppiMET
 
-object lightLeptons
-  take union(tightElectrons, tightMuons)
-  sort(pT)
+region baseline2LSS
+  select size(leptons) == 2
+  select charge(leptons[0]) == charge(leptons[1])
+  select mass(leptons[0] + leptons[1]) > 15
 
-composite dileptons
-  take disjoint(lightLeptons a, lightLeptons b)
-  object pair = a + b
+region SR_mumu
+  take baseline2LSS
+  select abs(pdgId(leptons[0])) == 13 and abs(pdgId(leptons[1])) == 13
+  select pt(leptons[0]) > 26
 
-composite ossfPairs
-  take disjoint(lightLeptons a, lightLeptons b)
-  select a.charge + b.charge == 0
-  select abs(a.pdgId) == abs(b.pdgId)
-  object pair = a + b
+region SR_mue
+  take baseline2LSS
+  select abs(pdgId(leptons[0])) == 13 and abs(pdgId(leptons[1])) == 11
+  select pt(leptons[0]) > 26
 
-object onZ_ossfPairs
-  take ossfPairs
-  select m [] 76 106
+region SR_emu
+  take baseline2LSS
+  select abs(pdgId(leptons[0])) == 11 and abs(pdgId(leptons[1])) == 13
+  select pt(leptons[0]) > 35
 
-region cleaning
-  select Flag_goodVertices
-  select Flag_globalSuperTightHalo2016Filter
-  select Flag_EcalDeadCellTriggerPrimitiveFilter
-  select Flag_BadPFMuonFilter
-  select Flag_BadPFMuonDzFilter
-  select Flag_hfNoisyHitsFilter
-  select Flag_eeBadScFilter
+region SR_ee
+  take baseline2LSS
+  select abs(pdgId(leptons[0])) == 11 and abs(pdgId(leptons[1])) == 11
+  select pt(leptons[0]) > 35
+  reject mass(leptons[0] + leptons[1]) > 76 and mass(leptons[0] + leptons[1]) < 106
 
-region 2LSS_baseline
-  take cleaning
-  select size(lightLeptons) == 2
-  select lightLeptons[0].charge == lightLeptons[1].charge
-  select m(lightLeptons[0] + lightLeptons[1]) > 15
+region baseline3L
+  select size(leptons) == 3
+  reject any(mass(leptons) < 12)
+  reject any(dR(leptons, leptons) < 0.2)
+  select size(bjets) == 0
 
-region 2LSS_mumu
-  take 2LSS_baseline
-  select abs(lightLeptons[0].pdgId) == 13
-  select abs(lightLeptons[1].pdgId) == 13
-  select pT(lightLeptons[0]) > 26
+region SR3L_1
+  take baseline3L
+  select pt(ptmiss[0]) > 150
 
-region 2LSS_mue
-  take 2LSS_baseline
-  select abs(lightLeptons[0].pdgId) == 13
-  select abs(lightLeptons[1].pdgId) == 11
-  select pT(lightLeptons[0]) > 26
+region SR3L_2
+  take baseline3L
+  select pt(ptmiss[0]) < 150
 
-region 2LSS_emu
-  take 2LSS_baseline
-  select abs(lightLeptons[0].pdgId) == 11
-  select abs(lightLeptons[1].pdgId) == 13
-  select pT(lightLeptons[0]) > 35
+region SR3L_5
+  take baseline3L
+  select mass(leptons[0] + leptons[1]) > 106
+  select pt(ptmiss[0]) > 150
 
-region 2LSS_ee
-  take 2LSS_baseline
-  select abs(lightLeptons[0].pdgId) == 11
-  select abs(lightLeptons[1].pdgId) == 11
-  select pT(lightLeptons[0]) > 35
-  reject m(lightLeptons[0] + lightLeptons[1]) [] 76 106 
+region SR3L_6
+  take baseline3L
+  select mass(leptons[0] + leptons[1]) > 106
+  select pt(ptmiss[0]) < 150
 
-region 3L_baseline
-  take cleaning
-  select size(lightLeptons) == 3
-  reject any(m(dileptons) < 12)
-  reject any(dR(dileptons.a, dileptons.b) < 0.2)
-  reject size(bjets) > 0
+region SR3L_7
+  take baseline3L
+  select mass(leptons[0] + leptons[1]) < 106
+  select pt(ptmiss[0]) > 150
 
-region 3L_SR1
-  take 3L_baseline
-  select size(onZ_ossfPairs)==0
-  select pT(met) > 150
+region SR3L_8
+  take baseline3L
+  select mass(leptons[0] + leptons[1]) < 106
+  select pt(ptmiss[0]) < 150
 
-region 3L_SR2
-  take 3L_baseline
-  select size(onZ_ossfPairs)==0
-  select pT(met) < 150
+region baseline4L
+  select size(leptons) >= 4
+  reject any(mass(leptons) < 12)
+  reject any(dR(leptons, leptons) < 0.2)
+  select size(bjets) == 0
 
-region 3L_SR5
-  take 3L_baseline
-  select size(onZ_ossfPairs)==0
-  select m(lightLeptons[0] + lightLeptons[1]) > 106
-  select pT(met) > 150
+region SR4L_3
+  take baseline4L
+  select pt(ptmiss[0]) > 150
 
-region 3L_SR6
-  take 3L_baseline
-  select size(onZ_ossfPairs)==0
-  select m(lightLeptons[0] + lightLeptons[1]) > 106
-  select pT(met) < 150
+region SR4L_4
+  take baseline4L
+  select pt(ptmiss[0]) < 150
 
-region 3L_SR7
-  take 3L_baseline
-  select size(onZ_ossfPairs)==0
-  select m(lightLeptons[0] + lightLeptons[1]) < 106
-  select pT(met) > 150
+region SR4L_9
+  take baseline4L
+  select pt(leptons[0]) > 200
+  select pt(ptmiss[0]) > 100
 
-region 3L_SR8
-  take 3L_baseline
-  select size(onZ_ossfPairs)==0
-  select m(lightLeptons[0] + lightLeptons[1]) < 106
-  select pT(met) < 150
+region SR4L_10
+  take baseline4L
+  select pt(leptons[0]) > 200
+  select pt(ptmiss[0]) < 100
 
-region 4L_baseline
-  select size(lightLeptons) >= 4
-  reject any(dileptons.pair.mass < 12)
-  reject any(dR(dileptons.a, dileptons.b) < 0.2)
-  reject size(bjets) > 0
+region SR4L_11
+  take baseline4L
+  select pt(leptons[0]) < 200
+  select pt(ptmiss[0]) > 100
 
-region 4L_SR3
-  take 4L_baseline
-  select size(onZ_ossfPairs)==0
-  select pT(met) > 150
-
-region 4L_SR4
-  take 4L_baseline
-  select size(onZ_ossfPairs)==0
-  select pT(met) < 150
-
-region 4L_SR9
-  take 4L_baseline
-  select size(onZ_ossfPairs)==0
-  select pT(lightLeptons)[0] > 200
-  select pT(met) > 100
-
-region 4L_SR10
-  take 4L_baseline
-  select size(onZ_ossfPairs)==0
-  select pT(lightLeptons)[0] > 200
-  select pT(met) < 100
-
-region 4L_SR11
-  take 4L_baseline
-  select size(onZ_ossfPairs)==0
-  select pT(lightLeptons)[0] < 200
-  select pT(met) > 100
-
-region 4L_SR12
-  take 4L_baseline
-  select size(onZ_ossfPairs)==0
-  select pT(lightLeptons)[0] < 200
-  select pT(met) < 100
+region SR4L_12
+  take baseline4L
+  select pt(leptons[0]) < 200
+  select pt(ptmiss[0]) < 100
 
 region ZZ_CR
-  take 4L_baseline
-  select size(ossfPairs) >= 2
-  select size(onZ_ossfPairs) >= 2
-  reject size(bjets) > 0
+  take baseline4L
+  select size(bjets) == 0
+  select any(abs(pdgId(leptons)) == 11 or abs(pdgId(leptons)) == 13)
+  select any(mass(leptons) > 76 and mass(leptons) < 106)
 
 region WZ_CR
-  take 3L_baseline
-  select size(ossfPairs)>0
-  select size(onZ_ossfPairs) >= 1
-  select pT(met) [] 50 150
-  select mT(lightLeptons[2], met) < 150
-  reject size(bjets) > 0
+  take baseline3L
+  select pt(ptmiss[0]) > 50
+  select pt(ptmiss[0]) < 150
+  select size(bjets) == 0
+  select any(mass(leptons) > 76 and mass(leptons) < 106)
 
 region MisID_CR
-  take 3L_baseline
-  select size(ossfPairs)>0
-  select size(onZ_ossfPairs)>0
-  select pT(met) < 100
-  select mT(lightLeptons[2], met) < 50 #FIXME we need the lepton that is not part of the OSSF pair
-  reject size(bjets) > 0
+  take baseline3L
+  select pt(ptmiss[0]) < 100
+  select size(bjets) == 0
+  select any(mass(leptons) > 76 and mass(leptons) < 106)
 
 region Zg_CR
-  take 3L_baseline
-  select m(lightLeptons[0] + lightLeptons[1] + lightLeptons[2]) [] 76 106
-  select any(m(dileptons) < 76)
-  select pT(lightLeptons[2]) > 15
-
+  take baseline3L
+  select mass(leptons[0] + leptons[1] + leptons[2]) > 76
+  select mass(leptons[0] + leptons[1] + leptons[2]) < 106
+  select any(mass(leptons) < 76)
+  select pt(leptons[2]) > 15

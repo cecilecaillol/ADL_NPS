@@ -1,67 +1,71 @@
-info multijet_btag_analysis
-  title NPS-25-007
-  version nanoAODv9
+info NPS25007
+  title "Multijet plus btag analysis"
+  cadi "NPS-25-007"
+  version "nanoAODv9"
 
-object baseJets
-  take Jet
-  select pt > 30
-  select abs(eta) < 2.4
-  select jetId == 6
-  select (pt > 50) or (puId >= 4)
+define jetId = extern "Jet_jetId"
+define puId = extern "Jet_puId"
+define btag = extern "Jet_btagDeepFlavB"
 
-object looseBJets
-  take baseJets
-  select btagDeepFlavB > 0.2783
+define ele_vetoId = extern "Electron_cutBased"
+define mu_looseId = extern "Muon_looseId"
+define mu_isoId = extern "Muon_pfIsoId"
 
-object mediumBJets
-  take baseJets
-  select btagDeepFlavB > 0.5
-
-object tightBJets
-  take baseJets
-  select btagDeepFlavB > 0.8
-
-object vetoElectrons
+object electrons
   take Electron
-  select pt > 10
-  select abs(eta) < 2.4
-  select cutBased == 0
+  select pt(this) > 10
+  select abs(eta(this)) < 2.4
+  select ele_vetoId >= 1
 
-object vetoMuons
+object muons
   take Muon
-  select abs(eta) < 2.4
-  select looseId == 1
-  select looseIsoId == 1
+  select abs(eta(this)) < 2.4
+  select mu_looseId == 1
+  select mu_isoId >= 2
 
-region cleaning
-  select Flag_goodVertices
-  select Flag_globalSuperTightHalo2016Filter
-  select Flag_EcalDeadCellTriggerPrimitiveFilter
-  select Flag_BadPFMuonFilter
-  select Flag_BadPFMuonDzFilter
-  select Flag_hfNoisyHitsFilter
-  select Flag_eeBadScFilter
+object jets
+  take Jet
+  select pt(this) > 30
+  select abs(eta(this)) < 2.4
+  select jetId == 6
+  select pt(this) > 50 or puId >= 6
+
+object looseBjets
+  take jets
+  select btag > 0.2783
+
+object mediumBjets
+  take jets
+  select btag > 0.2783
+
+object tightBjets
+  take jets
+  select btag > 0.2783
+
+object sortedJets : sort(jets, pt(jets), descend)
+
+object sortedLooseBjets : sort(looseBjets, pt(looseBjets), descend)
+object sortedMediumBjets : sort(mediumBjets, pt(mediumBjets), descend)
+object sortedTightBjets : sort(tightBjets, pt(tightBjets), descend)
 
 region baseline
-  take cleaning
-  select size(vetoElectrons) == 0
-  select size(vetoMuons) == 0
-  select size(baseJets) >= 4
-  select size(baseJets) <= 6
-  select pT(baseJets[0]) > 300
+  select size(electrons) == 0
+  select size(muons) == 0
+  select size(jets) >= 4
+  select size(jets) <= 6
+  select pt(sortedJets[0]) > 300
 
 region SR312
   take baseline
-  select size(mediumBJets) >= 2
-  select size(tightBJets) >= 1
-  select dR(mediumBJets[0], mediumBJets[1]) > 1.0
+  select size(mediumBjets) >= 2
+  select size(tightBjets) >= 1
+  select dR(sortedMediumBjets[0], sortedMediumBjets[1]) > 1.0
 
 region SR313
   take baseline
-  select size(tightBJets) >= 3
-  select dR(tightBJets[0], tightBJets[1]) > 1.0
+  select size(tightBjets) >= 3
+  select dR(sortedTightBjets[0], sortedTightBjets[1]) > 1.0
 
 region CR
   take baseline
-  select size(looseBJets) == 0
-
+  select size(looseBjets) == 0
