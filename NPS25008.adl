@@ -1,82 +1,75 @@
-info NPS25008
-  title "Monojet plus missing energy search"
-  cadi "NPS-25-008"
-  version "nanoAODv9"
+info analysis
+  title Monojet
+  experiment CMS
+  id NPS-25-008
+  sqrtS 13.6
+  lumi 60
+  publication XXX
+  arXiv XXXX.XXXXX
+  hepdata https://www.hepdata.net/record/xxxx
+  doi XXXX
 
-define mu_looseId = extern "Muon_looseId"
-define mu_tightId = extern "Muon_tightId"
-define mu_iso = extern "Muon_pfRelIso04_all"
+info adl
+  inputformat NanoAODv12
+  adlauthor Cecile Caillol
 
-define ele_vetoId = extern "Electron_cutBased"
-define ele_tightId = extern "Electron_cutBased"
-
-define tau_decay = extern "Tau_idDecayModeOldDMs"
-define tau_deep = extern "Tau_idDeepTau2018v2p5VSjet"
-
-define pho_looseId = extern "Photon_cutBased"
-define pho_tightId = extern "Photon_cutBased"
-
-define btag = extern "Jet_btagDeepFlavB"
-
-define chHEF = extern "sortedJets_chHEF"
-define neHEF = extern "sortedJets_neHEF"
-
-define metcal = extern "CaloMET_pt"
+object metcal
+  take CaloMET
 
 object looseMuons
   take Muon
-  select pt(this) > 10
-  select abs(eta(this)) < 2.4
-  select mu_looseId == 1
-  select mu_iso < 0.25
+  select pt > 10
+  select abs(eta) < 2.4
+  select looseId == 1
+  select pfRelIso04_all < 0.25
 
 object tightMuons
   take looseMuons
-  select pt(this) > 20
-  select mu_iso < 0.15
-  select mu_tightId == 1
+  select pt > 20
+  select pfRelIso04_all < 0.15
+  select tightId == 1
 
 object vetoElectrons
   take Electron
-  select pt(this) > 10
-  select abs(eta(this)) < 2.5
-  select ele_vetoId >= 1
+  select pt > 10
+  select abs(eta) < 2.5
+  select cutBased >= 1
 
 object tightElectrons
   take vetoElectrons
-  select pt(this) > 40
-  select ele_tightId >= 4
+  select pt > 40
+  select cutBased >= 4
 
 object taus
   take Tau
-  select pt(this) > 20
-  select abs(eta(this)) < 2.5
-  select abs(dz(this)) < 0.2
-  select tau_decay == 1
+  select pt > 20
+  select abs(eta) < 2.5
+  select abs(dz) < 0.2
+  select idDecayModeOldDMs == 1
   select tau_deep >= 4
   reject any(dR(this, tightMuons)) < 0.4
   reject any(dR(this, tightElectrons)) < 0.4
 
 object loosePhotons
   take Photon
-  select pt(this) > 20
-  select abs(eta(this)) < 2.5
-  select pho_looseId >= 1
+  select pt > 20
+  select abs(eta) < 2.5
+  select cutBased >= 1
 
 object tightPhotons
   take Photon
-  select pt(this) > 230
-  select abs(eta(this)) < 1.4442
-  select pho_tightId >= 3
+  select pt > 230
+  select abs(eta) < 1.4442
+  select cutBased >= 3
 
 object jets
   take Jet
-  select pt(this) > 30
-  select abs(eta(this)) < 2.5
+  select pt > 30
+  select abs(eta) < 2.5
 
 object bjets
   take jets
-  select btag > 0.2783
+  select btagDeepFlavB > 0.2783
 
 object sortedJets : sort(jets, pt(jets), descend)
 
@@ -97,11 +90,11 @@ region baseline
   select pt(ptmiss[0]) > 250
   select pt(sortedJets[0]) > 100
   select abs(eta(sortedJets[0])) < 2.5
-  #select chHEF(sortedJets[0]) > 0.1
-  #select neHEF(sortedJets[0]) < 0.8
+  select chHEF(sortedJets[0]) > 0.1
+  select neHEF(sortedJets[0]) < 0.8
   select size(bjets) == 0
   select min(dphi(jets[:4], ptmiss[0])) > 0.5
-  select abs(pt(ptmiss[0]) / metcal - 1) < 0.5
+  select abs(pt(ptmiss[0]) / pt(metcal[0]) - 1) < 0.5
   select abs(dphi(ptmiss[0], ptmiss[0])) < 2
 
 region SR

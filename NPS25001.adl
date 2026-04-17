@@ -1,41 +1,45 @@
-info NPS25001
-  title "Dilepton analysis with b jets"
-  cadi "NPS-25-001"
-  version "nanoAODv9"
+info analysis
+  title Search for VLL pair production in the di-lepton final state in the 4321 model
+  experiment CMS
+  id NPS-25-001
+  sqrtS 13.0
+  lumi 138
+  publication XXX
+  arXiv XXXX.XXXXX  
+  hepdata https://www.hepdata.net/record/xxxx
+  doi XXXX
 
-define eleWP80 = extern "Electron_mvaFall17V2Iso_WP80"
-define muTightId = extern "Muon_tightId"
-define jetId = extern "Jet_jetId"
-define puId = extern "Jet_puId"
-define btag = extern "Jet_btagDeepFlavB"
+info adl
+  inputformat NanoAODv9
+  adlauthor Cecile Caillol
 
 object electrons
   take Electron
-  select pt(this) > 10
-  select abs(eta(this)) < 2.5
-  select eleWP80 == 1
-  reject abs(eta(this)) > 1.4442 and abs(eta(this)) < 1.5560
+  select pt > 10
+  select abs(eta) < 2.5
+  select mvaFall17V2Iso_WP80 == 1
+  reject abs(eta) > 1.4442 and abs(eta) < 1.5560
 
 object muons
   take Muon
-  select pt(this) > 10
-  select abs(eta(this)) < 2.4
-  select muTightId == 1
+  select pt > 10
+  select abs(eta) < 2.4
+  select tightId == 1
 
 object leptons : union(electrons, muons)
 
 object jets
   take Jet
-  select pt(this) > 30
-  select abs(eta(this)) < 2.4
+  select pt > 30
+  select abs(eta) < 2.4
   select jetId >= 6
-  select pt(this) > 50 or puId >= 4
+  select pt > 50 or puId >= 4
   reject any(dR(this, electrons)) < 0.4
   reject any(dR(this, muons)) < 0.4
 
 object bjets
   take jets
-  select btag > 0.2783
+  select btagDeepFlavB > 0.2783
 
 object ptmiss
   take MET

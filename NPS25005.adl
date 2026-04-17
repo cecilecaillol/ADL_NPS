@@ -1,51 +1,44 @@
-info NPS25005
-  title "Boosted Higgs analysis with leptonic and hadronic categories"
-  cadi "NPS-25-005"
-  version "nanoAODv9"
+info analysis
+  title Boosted H(125) -> aa -> bbbb
+  experiment CMS
+  id NPS-25-005
+  sqrtS 13.0
+  lumi 138
+  publication XXX
+  arXiv XXXX.XXXXX
+  hepdata https://www.hepdata.net/record/xxxx
+  doi XXXX
 
-define mu_mediumId = extern "Muon_mediumId"
-define mu_highPtId = extern "Muon_highPtId"
-define mu_miniIso = extern "Muon_miniPFRelIso_all"
-
-define ele_wp90 = extern "Electron_mvaFall17V2Iso_WP90"
-define ele_wp80 = extern "Electron_mvaFall17V2Iso_WP80"
-define ele_heep = extern "Electron_cutBased_HEEP"
-
-define jetId = extern "Jet_jetId"
-define puId = extern "Jet_puId"
-define btag = extern "Jet_btagDeepFlavB"
-
-define fj_particleNetXbb = extern "FatJet_particleNetMD_Xbb"
-define fj_particleNetTop = extern "FatJet_particleNet_TvsQCD"
-define fj_particleNetWZ = extern "FatJet_particleNet_WvsQCD"
-define fj_msoftdrop = extern "FatJet_msoftdrop_nom"
+info adl
+  inputformat NanoAODv9
+  adlauthor Cecile Caillol
 
 object muons
   take Muon
-  select pt(this) > 10
-  select abs(eta(this)) < 2.4
-  select mu_mediumId == 1 or (mu_highPtId == 1 and pt(this) > 200)
-  select mu_miniIso < 0.10
-  select abs(dxy(this)) < 0.02
-  select abs(dz(this)) < 0.1
+  select pt > 10
+  select abs(eta) < 2.4
+  select mediumId == 1 or (highPtId == 1 and pt > 200)
+  select miniPFRelIso_all < 0.10
+  select abs(dxy) < 0.02
+  select abs(dz) < 0.1
 
 object triggerMuons
   take muons
-  select pt(this) > 26
+  select pt > 26
 
 object electrons
   take Electron
-  select pt(this) > 10
-  select abs(eta(this)) < 2.5
-  reject abs(eta(this)) > 1.44 and abs(eta(this)) < 1.57
-  select ele_wp90 == 1 or (ele_heep == 1 and pt(this) > 35)
-  select abs(dxy(this)) < 0.02
-  select abs(dz(this)) < 0.1
+  select pt > 10
+  select abs(eta) < 2.5
+  reject abs(eta) > 1.44 and abs(eta) < 1.57
+  select mvaFall17V2Iso_WP90 == 1 or (cutBased_HEEP == 1 and pt > 35)
+  select abs(dxy) < 0.02
+  select abs(dz) < 0.1
 
 object triggerElectrons
   take electrons
-  select pt(this) > 35
-  select ele_wp80 == 1 or (ele_heep == 1 and pt(this) > 35)
+  select pt > 35
+  select mvaFall17V2Iso_WP80 == 1 or (cutBased_HEEP == 1 and pt > 35)
 
 object leptons : union(muons, electrons)
 
@@ -53,32 +46,32 @@ object triggerLeptons : union(triggerMuons, triggerElectrons)
 
 object fatjets
   take FatJet
-  select abs(eta(this)) < 2.4
+  select abs(eta) < 2.4
   select jetId == 6
 
 object higgsAK8
   take fatjets
-  select pt(this) > 250
-  select fj_msoftdrop > 20
-  select fj_particleNetXbb > 0.85
+  select pt > 250
+  select msoftdrop_nom > 20
+  select particleNetMD_Xbb > 0.85
 
 object topAK8
   take fatjets
-  select pt(this) > 300
-  select fj_particleNetTop > 0.970
-  select fj_msoftdrop > 50 and fj_msoftdrop < 220
+  select pt > 300
+  select particleNet_TvsQCD > 0.970
+  select msoftdrop_nom > 50 and msoftdrop_nom < 220
 
 object wzAK8
   take fatjets
-  select fj_particleNetWZ > 0.9873
-  select fj_msoftdrop > 50 and fj_msoftdrop < 220
+  select particleNet_WvsQCD > 0.9873
+  select msoftdrop_nom > 50 and msoftdrop_nom < 220
 
 object ak4jets
   take Jet
-  select pt(this) > 30
-  select abs(eta(this)) < 2.4
+  select pt > 30
+  select abs(eta) < 2.4
   select jetId == 6
-  select pt(this) > 50 or puId >= 4
+  select pt > 50 or puId >= 4
   reject any(dR(this, leptons)) < 0.4
   reject any(dR(this, higgsAK8)) < 0.8
   reject any(dR(this, topAK8)) < 0.8
@@ -86,7 +79,7 @@ object ak4jets
 
 object bjets
   take ak4jets
-  select btag > 0.2783
+  select btagDeepFlavB > 0.2783
 
 object ptmiss
   take MET

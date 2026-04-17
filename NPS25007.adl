@@ -1,46 +1,48 @@
-info NPS25007
-  title "Multijet plus btag analysis"
-  cadi "NPS-25-007"
-  version "nanoAODv9"
+info analysis
+  title Search for resonant single RPV stop
+  experiment CMS
+  id NPS-25-007
+  sqrtS 13.0
+  lumi 138
+  publication XXX
+  arXiv XXXX.XXXXX
+  hepdata https://www.hepdata.net/record/xxxx
+  doi XXXX
 
-define jetId = extern "Jet_jetId"
-define puId = extern "Jet_puId"
-define btag = extern "Jet_btagDeepFlavB"
-
-define ele_vetoId = extern "Electron_cutBased"
-define mu_looseId = extern "Muon_looseId"
-define mu_isoId = extern "Muon_pfIsoId"
+info adl
+  inputformat NanoAODv9
+  adlauthor Cecile Caillol
 
 object electrons
   take Electron
-  select pt(this) > 10
-  select abs(eta(this)) < 2.4
-  select ele_vetoId >= 1
+  select pt > 10
+  select abs(eta) < 2.4
+  select cutBased >= 1
 
 object muons
   take Muon
-  select abs(eta(this)) < 2.4
-  select mu_looseId == 1
-  select mu_isoId >= 2
+  select abs(eta) < 2.4
+  select looseId == 1
+  select pfIsoId >= 2
 
 object jets
   take Jet
-  select pt(this) > 30
-  select abs(eta(this)) < 2.4
+  select pt > 30
+  select abs(eta) < 2.4
   select jetId == 6
-  select pt(this) > 50 or puId >= 6
+  select pt > 50 or puId >= 6
 
 object looseBjets
   take jets
-  select btag > 0.2783
+  select btagDeepFlavB > 0.2783
 
 object mediumBjets
   take jets
-  select btag > 0.2783
+  select btagDeepFlavB > 0.2783
 
 object tightBjets
   take jets
-  select btag > 0.2783
+  select btagDeepFlavB > 0.2783
 
 object sortedJets : sort(jets, pt(jets), descend)
 

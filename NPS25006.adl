@@ -1,50 +1,50 @@
-info NPS25006
-  title "Diphoton plus jets and MET search"
-  cadi "NPS-25-006"
-  version "nanoAODv9"
+info analysis
+  title Search for SUSY in diphoton + MET
+  experiment CMS
+  id NPS-25-006
+  sqrtS 13.0
+  lumi 138
+  publication XXX
+  arXiv XXXX.XXXXX
+  hepdata https://www.hepdata.net/record/xxxx
+  doi XXXX
 
-define mu_tightId = extern "Muon_tightId"
-define mu_miniIso = extern "Muon_miniPFRelIso_all"
-
-define ele_tightId = extern "Electron_cutBased"
-define ele_miniIso = extern "Electron_miniPFRelIso_all"
-
-define pho_looseId = extern "Photon_cutBased"
-
-define HLT_DoublePhoton = extern "HLT_DoublePhoton60"
+info adl
+  inputformat NanoAODv9
+  adlauthor Cecile Caillol
 
 object muons
   take Muon
-  select pt(this) > 40
-  select abs(eta(this)) < 2.2
-  select mu_tightId == 1
-  select mu_miniIso < 0.2
+  select pt > 40
+  select abs(eta) < 2.2
+  select tightId == 1
+  select miniPFRelIso_all < 0.2
 
 object electrons
   take Electron
-  select pt(this) > 40
-  select abs(eta(this)) < 2.2
-  select ele_tightId >= 4
-  select ele_miniIso < 0.2
+  select pt > 40
+  select abs(eta) < 2.2
+  select cutBased >= 4
+  select miniPFRelIso_all < 0.2
 
 object photons
   take Photon
-  select pt(this) > 80
-  select abs(eta(this)) < 2.4
-  select pho_looseId >= 1
+  select pt > 80
+  select abs(eta) < 2.4
+  select cutBased >= 1
 
 object barrelPhotons
   take photons
-  select abs(eta(this)) < 1.44
+  select abs(eta) < 1.44
 
 object jets
   take Jet
-  select pt(this) > 30
-  select abs(eta(this)) < 2.5
+  select pt > 30
+  select abs(eta) < 2.5
 
 object centralJets
   take jets
-  select abs(eta(this)) < 2.4
+  select abs(eta) < 2.4
 
 object ptmiss
   take MET
@@ -58,7 +58,7 @@ composite photonPair
   candidate diphoton = g1 + g2
 
 region baseline
-  select HLT_DoublePhoton
+  select HLT_DoublePhoton60
   select size(photons) >= 2
   select size(barrelPhotons) >= 1
   select size(centralJets) >= 2

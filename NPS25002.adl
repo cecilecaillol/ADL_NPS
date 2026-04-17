@@ -1,33 +1,36 @@
 info analysis
-  title "DM_dilepton_SR"
+  title Search for the Inert Doublet Model in the dilepton final state
+  experiment CMS
+  id NPS-25-002
+  sqrtS 13.6
+  lumi 60
+  publication XXX
+  arXiv XXXX.XXXXX
+  hepdata https://www.hepdata.net/record/xxxx
+  doi XXXX
 
-define singleEleHLT = extern "HLT_Ele30_WPTight_Gsf"
-
-define singleMuHLT = extern "HLT_IsoMu24"
+info adl
+  inputformat NanoAODv12
+  adlauthor Cecile Caillol
 
 object looseElectrons
   take Electron
-  select pt(this) > 10
-  select abs(eta(this)) < 2.5
-  select abs(dxy(this)) < 0.3
-  select abs(dz(this)) < 0.2
-  reject abs(eta(this)) > 1.4442 and abs(eta(this)) < 1.566
+  select pt > 10
+  select abs(eta) < 2.5
+  select abs(dxy) < 0.3
+  select abs(dz) < 0.2
+  reject abs(eta) > 1.4442 and abs(eta) < 1.566
 
 object tightElectrons
   take looseElectrons
 
-define looseId = extern "Muon_looseId"
-
 object looseMuons
   take Muon
-  select pt(this) > 10
-  select abs(eta(this)) < 2.4
-  select abs(dxy(this)) < 0.3
-  select abs(dz(this)) < 0.2
+  select pt > 10
+  select abs(eta) < 2.4
+  select abs(dxy) < 0.3
+  select abs(dz) < 0.2
   select looseId == 1
-
-define tightId = extern "looseMuons_tightId"
-define pfIsoId = extern "looseMuons_pfIsoId"
 
 object tightMuons
   take looseMuons
@@ -40,18 +43,16 @@ object tightLeptons: union(tightElectrons, tightMuons)
 
 object jets
   take Jet
-  select pt(this) > 20
-  select abs(eta(this)) < 2.4
+  select pt > 20
+  select abs(eta) < 2.4
 
 object jets30
   take jets
-  select pt(this) > 30
-
-define deepFlavB = extern "jets_btagDeepFlavB"
+  select pt > 30
 
 object bjets
   take jets
-  select deepFlavB > 0.2783
+  select btagDeepFlavB > 0.2783
 
 composite llPair
 	take disjoint(tightLeptons l1, tightLeptons l2)
@@ -61,8 +62,6 @@ composite llPair
 	select abs(dphi(dilepton, METLV)) >= 1
 	select cos(dphihadamard(l1, l2)) >= 0.75
 
-# Event selection
-
 region baseline
   select size(looseLeptons) == 2 
   select size(llPair->dilepton) == 1
@@ -71,15 +70,15 @@ region baseline
 
 region SRee
   take baseline
-  select singleEleHLT
+  select HLT_Ele30_WPTight_Gsf
   select abs(pdgId(looseLeptons[0])) == 11 and abs(pdgId(looseLeptons[0])) == 11
 
 region SRmumu
   take baseline
-  select singleMuHLT
+  select HLT_IsoMu24
   select abs(pdgId(looseLeptons[0])) == 13 and abs(pdgId(looseLeptons[0])) == 13
 
 region CRemu
   take baseline
-  select singleMuHLT
+  select HLT_IsoMu24
   select abs(pdgId(looseLeptons[0])) + abs(pdgId(looseLeptons[0])) == 24

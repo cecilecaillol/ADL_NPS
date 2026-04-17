@@ -1,8 +1,17 @@
-info h2a1a2
-  title "h->a1a2->(bb)bbtautau"
-  an "NPS-25-003"
-  cadi "NPS-25-003"
-  version "nanoAODv9"
+info analysis
+  title Search for h->a1a2 with b jets and tau leptons in the final state
+  experiment CMS
+  id NPS-25-003
+  sqrtS 13.0
+  lumi 138
+  publication XXX
+  arXiv XXXX.XXXXX
+  hepdata https://www.hepdata.net/record/xxxx
+  doi XXXX
+
+info adl
+  inputformat NanoAODv9
+  adlauthor Cecile Caillol
 
 define muMediumId = extern "Muon_mediumId"
 define muIso = extern "Muon_pfRelIso04_all"
@@ -16,50 +25,42 @@ define tauVSjet = extern "Tau_idDeepTau2017v2p1VSjet"
 define tauDM = extern "Tau_idDecayModeOldDMs"
 define jetId = extern "Jet_jetId"
 
-define f1 = extern "Flag_goodVertices"
-define f2 = extern "Flag_globalSuperTightHalo2016Filter"
-define f3 = extern "Flag_EcalDeadCellTriggerPrimitiveFilter"
-define f4 = extern "Flag_BadPFMuonFilter"
-define f5 = extern "Flag_BadPFMuonDzFilter"
-define f6 = extern "Flag_hfNoisyHitsFilter"
-define f7 = extern "Flag_eeBadScFilter"
-
 object muons_loose
   take Muon
-  select pt(this) > 10
-  select abs(eta(this)) < 2.4
-  select muMediumId == 1
-  select abs(dz(this)) < 0.2
-  select abs(dxy(this)) < 0.045
-  select muIso < 0.5
+  select pt > 10
+  select abs(eta)) < 2.4
+  select mediumId == 1
+  select abs(dz) < 0.2
+  select abs(dxy) < 0.045
+  select pfRelIso04_all < 0.5
 
 object electrons_loose
   take Electron
-  select pt(this) > 10
-  select abs(eta(this)) < 2.5
-  select abs(dz(this)) < 0.2
-  select abs(dxy(this)) < 0.045
+  select pt > 10
+  select abs(eta) < 2.5
+  select abs(dz) < 0.2
+  select abs(dxy) < 0.045
   select lostHits <= 1
   select convVeto == 1
-  select eleIso < 0.5
+  select pfRelIso03_all < 0.5
   reject any(dR(this, muons_loose)) < 0.4
 
 object taus_loose
   take Tau
-  select pt(this) > 10
-  select abs(eta(this)) < 2.3
-  select abs(dz(this)) < 0.2
-  select tauVSe >= 1
-  select tauVSmu >= 1
-  select tauVSjet >= 1
-  select tauDM == 1
+  select pt > 10
+  select abs(eta) < 2.3
+  select abs(dz) < 0.2
+  select idDeepTau2017v2p1VSe >= 1
+  select idDeepTau2017v2p1VSmu >= 1
+  select idDeepTau2017v2p1VSjet >= 1
+  select idDecayModeOldDMs == 1
   reject any(dR(this, muons_loose)) < 0.4
   reject any(dR(this, electrons_loose)) < 0.4
 
 object jets_loose
   take Jet
-  select pt(this) > 18
-  select abs(eta(this)) < 4.7
+  select pt > 18
+  select abs(eta) < 4.7
   select jetId >= 2
   reject any(dR(this, muons_loose)) < 0.4
   reject any(dR(this, electrons_loose)) < 0.4
@@ -67,39 +68,36 @@ object jets_loose
 
 object muons_muTau_offline
   take muons_loose
-  select pt(this) > 19
-  select muIso < 0.15
+  select pt > 19
+  select pfRelIso04_all < 0.15
 
 object taus_muTau_offline
   take taus_loose
-  select pt(this) > 18
-  select tauVSe >= 2
-  select tauVSmu >= 3
-  select tauVSjet >= 1
+  select pt > 18
+  select idDeepTau2017v2p1VSe >= 2
+  select idDeepTau2017v2p1VSmu >= 3
 
 object electrons_eTau_offline
   take electrons_loose
-  select pt(this) > 20
-  select eleMVA90 == 1
-  select eleIso < 0.15
+  select pt > 20
+  select mvaFall17V2noIso_WP90 == 1
+  select pfRelIso03_all < 0.15
 
 object taus_eTau_offline
   take taus_loose
-  select pt(this) > 18
-  select tauVSe >= 3
-  select tauVSmu >= 1
-  select tauVSjet >= 1
+  select pt > 18
+  select idDeepTau2017v2p1VSe >= 3
 
 object electrons_eMu_offline
   take electrons_loose
-  select pt(this) > 13
-  select eleMVA90 == 1
-  select eleIso < 0.3
+  select pt > 13
+  select mvaFall17V2noIso_WP90 == 1
+  select pfRelIso03_all < 0.3
 
 object muons_eMu_offline
   take muons_loose
-  select pt(this) > 13
-  select muIso < 0.3
+  select pt > 13
+  select pfRelIso04_all < 0.3
 
 composite muTau_pairs
   take disjoint(muons_muTau_offline l1, taus_muTau_offline l2)
@@ -117,13 +115,13 @@ composite eMu_pairs
   select dR(l1, l2) > 0.4
 
 region cleaning
-  select f1
-  select f2
-  select f3
-  select f4
-  select f5
-  select f6
-  select f7
+  select Flag_goodVertices"
+  select Flag_globalSuperTightHalo2016Filter"
+  select Flag_EcalDeadCellTriggerPrimitiveFilter"
+  select Flag_BadPFMuonFilter"
+  select Flag_BadPFMuonDzFilter"
+  select Flag_hfNoisyHitsFilter"
+  select Flag_eeBadScFilter"
 
 region SR_muTau
   take cleaning

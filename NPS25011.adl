@@ -1,61 +1,59 @@
-info Multilepton
-  title "Multilepton analysis"
-  an "AN-ML-001"
-  cadi "ML-001"
-  version "nanoAODv9"
+info analysis
+  title Search for VLLs in same-sign dilepton and multilepton final states
+  experiment CMS
+  id NPS-25-011
+  sqrtS 13.6
+  lumi 60
+  publication XXX
+  arXiv XXXX.XXXXX
+  hepdata https://www.hepdata.net/record/xxxx
+  doi XXXX
 
-define muMediumId = extern "looseMuons_mediumId"
-define muLooseId = extern "Muon_looseId"
-define muIso = extern "Muon_pfRelIso03_all"
-define muIso2 = extern "looseMuons_pfRelIso03_all"
-define eleMediumId = extern "looseElectrons_cutBased"
-define eleVetoId = extern "Electron_cutBased"
-define eleIso = extern "Electron_pfRelIso03_all"
-define eleIso2 = extern "looseElectrons_pfRelIso03_all"
-define jetId = extern "Jet_jetId"
-define btagDeepJet = extern "jets_btagDeepFlavB"
+info adl
+  inputformat NanoAODv12
+  adlauthor Cecile Caillol
 
 object looseMuons
   take Muon
-  select pt(this) > 10
-  select abs(eta(this)) < 2.4
-  select muLooseId == 1
-  select muIso < 1.0
-  select abs(dxy(this)) < 0.05
-  select abs(dz(this)) < 0.1
+  select pt > 10
+  select abs(eta) < 2.4
+  select looseId == 1
+  select pfRelIso03_all < 1.0
+  select abs(dxy) < 0.05
+  select abs(dz) < 0.1
 
 object muons
   take looseMuons
-  select muMediumId == 1
-  select muIso2 < 0.15
+  select mediumId == 1
+  select pfRelIso03_all < 0.15
 
 object looseElectrons
   take Electron
-  select pt(this) > 10
-  select abs(eta(this)) < 2.4
-  select eleVetoId >= 1
-  select eleIso < 1.0
-  select (abs(eta(this)) < 1.479 and abs(dxy(this)) < 0.05 and abs(dz(this)) < 0.1) or (abs(eta(this)) >= 1.479 and abs(dxy(this)) < 0.1 and abs(dz(this)) < 0.2)
+  select pt > 10
+  select abs(eta) < 2.4
+  select cutBased >= 1
+  select pfRelIso03_all < 1.0
+  select (abs(eta) < 1.479 and abs(dxy) < 0.05 and abs(dz) < 0.1) or (abs(eta) >= 1.479 and abs(dxy) < 0.1 and abs(dz) < 0.2)
   reject any(dR(this, looseMuons)) < 0.05
 
 object electrons
   take looseElectrons
-  select eleMediumId >= 3
-  select eleIso2 < 0.15
+  select cutBased >= 3
+  select pfRelIso03_all < 0.15
 
 object leptons: union(electrons, muons)
 
 object jets
   take Jet
-  select pt(this) > 50
-  select abs(eta(this)) < 2.4
+  select pt > 50
+  select abs(eta) < 2.4
   select jetId >= 2
   reject any(dR(this, looseMuons)) < 0.5
   reject any(dR(this, looseElectrons)) < 0.5
 
 object bjets
   take jets
-  select btagDeepJet > 0.2783
+  select btagDeepFlavB > 0.2783
 
 object ptmiss
   take PuppiMET

@@ -1,58 +1,51 @@
-info VBF_VH_Hbb
-  title "VBF and VH Hbb analysis"
-  an "NPS-25-009+010"
-  cadi "NPS-25-009"
-  version "nanoAODv9"
+info analysis
+  title Search for VBFH and VH, H(125) -> aa -> bbbb in Run 3
+  experiment CMS
+  id NPS-25-009+NPS-25-010
+  sqrtS 13.6
+  lumi 60
+  publication XXX
+  arXiv XXXX.XXXXX
+  hepdata https://www.hepdata.net/record/xxxx
+  doi XXXX
 
-define eleTightId = extern "Electron_cutBased"
-define muTightId = extern "Muon_tightId"
-define muIsoId = extern "Muon_pfIsoId"
-define jetId = extern "Jet_jetId"
-define puId = extern "Jet_puId"
-define btagDeepJet = extern "Jet_btagDeepFlavB"
-define dblbtag = extern "Jet_btagUParTAK4Bprobbb"
-define dblbtagResolved = extern "Jet_btagUParTAK4B"
-
-define trigDoubleB = extern "HLT_DoublePFJets"
-define trigSingleEle = extern "HLT_Ele32_WPTight"
-define trigSingleMu = extern "HLT_IsoMu24"
-define trigDoubleEle = extern "HLT_Ele23_Ele12"
-define trigDoubleMu = extern "HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL"
-define trigMET = extern "HLT_PFMET"
+info adl
+  inputformat NanoAODv12
+  adlauthor Cecile Caillol
 
 object electrons
   take Electron
-  select pt(this) > 20
-  select abs(eta(this)) < 2.5
-  reject abs(eta(this)) > 1.4442 and abs(eta(this)) < 1.5660
-  select eleTightId >= 4
+  select pt > 20
+  select abs(eta) < 2.5
+  reject abs(eta) > 1.4442 and abs(eta) < 1.5660
+  select cutBased >= 4
 
 object muons
   take Muon
-  select pt(this) > 20
-  select abs(eta(this)) < 2.4
-  select muTightId == 1
-  select muIsoId >= 4
+  select pt > 20
+  select abs(eta) < 2.4
+  select tightId == 1
+  select pfIsoId >= 4
 
 object leptons: union(electrons, muons)
 
 object jets
   take Jet
-  select pt(this) > 20
-  select abs(eta(this)) < 4.7
+  select pt > 20
+  select abs(eta) < 4.7
   select jetId >= 2
   reject any(dR(this, electrons)) < 0.4
   reject any(dR(this, muons)) < 0.4
-  select (pt(this) >= 50) or (pt(this) < 50 and puId >= 4)
+  select (pt >= 50) or (pt < 50 and puId >= 4)
 
 object bjets
   take jets
-  select abs(eta(this)) < 2.4
-  select btagDeepJet > 0.0490
+  select abs(eta) < 2.4
+  select btagDeepFlavB > 0.0490
 
 object nonbjets
   take jets
-  reject btagDeepJet > 0.0490
+  reject btagDeepFlavB > 0.0490
 
 object qjets
   take sort(nonbjets, pt(nonbjets), descend)
@@ -60,24 +53,24 @@ object qjets
 
 object otherjets
   take nonbjets[2:]
-  select abs(eta(this)) < 2.4
+  select abs(eta) < 2.4
 
 object ptmiss
   take PuppiMET
 
 object dblbjets_boosted
   take jets
-  select pt(this) > 20
-  select dblbtag > 0.38
+  select pt > 20
+  select btagUParTAK4Bprobbb > 0.38
 
 object dblbjets_resolved
   take jets
-  select pt(this) > 20
-  select dblbtagResolved > 0.4648
+  select pt > 20
+  select btagUParTAK4B > 0.4648
 
 region VBF_preselection
   select size(leptons) == 0
-  select trigDoubleB
+  select HLT_DoublePFJets
   select size(jets) >= 5
   select pt(jets[0]) >= 110
   select pt(jets[1]) >= 90
@@ -112,14 +105,14 @@ region VH_Znunu_boosted
 
 region VH_Wlnu_boosted
   select size(leptons) == 1
-  select trigSingleEle or trigSingleMu
+  select HLT_Ele32_WPTight or HLT_IsoMu24
   select size(jets) >= 2
   select size(dblbjets_boosted) >= 2
   select pt(ptmiss[0]) > 25
 
 region VH_Zll_boosted
   select size(leptons) >= 2
-  select trigDoubleEle or trigDoubleMu
+  select HLT_Ele23_Ele12 or HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL
   select abs(pdgId(leptons[0])) == abs(pdgId(leptons[1]))
   select charge(leptons[0]) != charge(leptons[1])
   select mass(leptons[0] + leptons[1]) > 80
@@ -128,7 +121,7 @@ region VH_Zll_boosted
 
 region VH_Znunu_resolved
   select size(leptons) == 0
-  select trigMET
+  select HLT_PFMET
   select pt(ptmiss[0]) > 170
   select min(dphi(jets, ptmiss[0])) > 0.5
   select size(jets) >= 3
@@ -136,14 +129,14 @@ region VH_Znunu_resolved
 
 region VH_Wlnu_resolved
   select size(leptons) == 1
-  select trigSingleEle or trigSingleMu
+  select HLT_Ele32_WPTight or HLT_IsoMu24
   select size(jets) >= 3
   select size(dblbjets_resolved) >= 3
   select pt(ptmiss[0]) > 50
 
 region VH_Zll_resolved
   select size(leptons) >= 2
-  select trigDoubleEle or trigDoubleMu
+  select HLT_Ele23_Ele12 or HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL
   select abs(pdgId(leptons[0])) == abs(pdgId(leptons[1]))
   select charge(leptons[0]) != charge(leptons[1])
   select mass(leptons[0] + leptons[1]) > 80
