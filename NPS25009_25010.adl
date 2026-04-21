@@ -27,7 +27,8 @@ object muons
   select tightId == 1
   select pfIsoId >= 4
 
-object leptons: union(electrons, muons)
+object leptons
+  take union(electrons, muons)
 
 object jets
   take Jet

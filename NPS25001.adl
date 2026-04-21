@@ -26,7 +26,8 @@ object muons
   select abs(eta) < 2.4
   select tightId == 1
 
-object leptons : union(electrons, muons)
+object leptons
+  take union(electrons, muons)
 
 object jets
   take Jet
@@ -44,7 +45,8 @@ object bjets
 object ptmiss
   take MET
 
-object sortedLeptons : sort(leptons, pt(leptons), descend)
+object sortedLeptons
+  take sort(leptons, pt(leptons), descend)
 
 composite dilepton
   take disjoint(leptons l1, leptons l2)
@@ -57,7 +59,7 @@ region baseline
   select size(leptons) == 2
   select size(dilepton->ll) == 1
   select pt(sortedLeptons[0]) > 30
-  select ptmiss[0] > 40
+  select pt(ptmiss[0]) > 40
   select HT > 300
   select size(jets) >= 4
   select size(bjets) >= 2

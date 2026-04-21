@@ -71,12 +71,14 @@ object bjets
   take jets
   select btagDeepFlavB > 0.2783
 
-object sortedJets : sort(jets, pt(jets), descend)
+object sortedJets
+  take sort(jets, pt(jets), descend)
 
 object ptmiss
   take MET
 
-object recoil : union(ptmiss, tightMuons, tightElectrons, tightPhotons)
+object recoil
+  take union(ptmiss, tightMuons, tightElectrons, tightPhotons)
 
 composite dimuon
   take disjoint(tightMuons m1, tightMuons m2)
@@ -123,13 +125,13 @@ region CR_dielectron
 region CR_singlemu
   take baseline
   select size(tightMuons) == 1
-  select sqrt(2*pt(tightMuons[0])*pt(met[0])*(1 - cos(dphi(tightMuons[0], ptmiss[0])))) < 160
+  select sqrt(2*pt(tightMuons[0])*pt(ptmiss[0])*(1 - cos(dphi(tightMuons[0], ptmiss[0])))) < 160
 
 region CR_singleelectron
   take baseline
   select size(tightElectrons) == 1
   select pt(ptmiss[0]) > 100
-  select sqrt(2*pt(tightElectrons[0])*pt(met[0])*(1 - cos(dphi(tightElectrons[0], ptmiss[0])))) < 160
+  select sqrt(2*pt(tightElectrons[0])*pt(ptmiss[0])*(1 - cos(dphi(tightElectrons[0], ptmiss[0])))) < 160
 
 region CR_photon
   take baseline

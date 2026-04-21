@@ -40,9 +40,11 @@ object triggerElectrons
   select pt > 35
   select mvaFall17V2Iso_WP80 == 1 or (cutBased_HEEP == 1 and pt > 35)
 
-object leptons : union(muons, electrons)
+object leptons
+  take union(muons, electrons)
 
-object triggerLeptons : union(triggerMuons, triggerElectrons)
+object triggerLeptons
+  take union(triggerMuons, triggerElectrons)
 
 object fatjets
   take FatJet

@@ -13,22 +13,10 @@ info adl
   inputformat NanoAODv9
   adlauthor Cecile Caillol
 
-define muMediumId = extern "Muon_mediumId"
-define muIso = extern "Muon_pfRelIso04_all"
-define eleIso = extern "Electron_pfRelIso03_all"
-define lostHits = extern "Electron_lostHits"
-define convVeto = extern "Electron_convVeto"
-define eleMVA90 = extern "Electron_mvaFall17V2noIso_WP90"
-define tauVSe = extern "Tau_idDeepTau2017v2p1VSe"
-define tauVSmu = extern "Tau_idDeepTau2017v2p1VSmu"
-define tauVSjet = extern "Tau_idDeepTau2017v2p1VSjet"
-define tauDM = extern "Tau_idDecayModeOldDMs"
-define jetId = extern "Jet_jetId"
-
 object muons_loose
   take Muon
   select pt > 10
-  select abs(eta)) < 2.4
+  select abs(eta) < 2.4
   select mediumId == 1
   select abs(dz) < 0.2
   select abs(dxy) < 0.045
@@ -115,13 +103,13 @@ composite eMu_pairs
   select dR(l1, l2) > 0.4
 
 region cleaning
-  select Flag_goodVertices"
-  select Flag_globalSuperTightHalo2016Filter"
-  select Flag_EcalDeadCellTriggerPrimitiveFilter"
-  select Flag_BadPFMuonFilter"
-  select Flag_BadPFMuonDzFilter"
-  select Flag_hfNoisyHitsFilter"
-  select Flag_eeBadScFilter"
+  select Flag_goodVertices
+  select Flag_globalSuperTightHalo2016Filter
+  select Flag_EcalDeadCellTriggerPrimitiveFilter
+  select Flag_BadPFMuonFilter
+  select Flag_BadPFMuonDzFilter
+  select Flag_hfNoisyHitsFilter
+  select Flag_eeBadScFilter
 
 region SR_muTau
   take cleaning

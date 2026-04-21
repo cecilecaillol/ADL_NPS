@@ -44,11 +44,17 @@ object tightBjets
   take jets
   select btagDeepFlavB > 0.2783
 
-object sortedJets : sort(jets, pt(jets), descend)
+object sortedJets
+  take sort(jets, pt(jets), descend)
 
-object sortedLooseBjets : sort(looseBjets, pt(looseBjets), descend)
-object sortedMediumBjets : sort(mediumBjets, pt(mediumBjets), descend)
-object sortedTightBjets : sort(tightBjets, pt(tightBjets), descend)
+object sortedLooseBjets
+  take sort(looseBjets, pt(looseBjets), descend)
+
+object sortedMediumBjets
+  take sort(mediumBjets, pt(mediumBjets), descend)
+
+object sortedTightBjets
+  take sort(tightBjets, pt(tightBjets), descend)
 
 region baseline
   select size(electrons) == 0

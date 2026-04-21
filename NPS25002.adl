@@ -37,9 +37,11 @@ object tightMuons
   select tightId == 1
   select pfIsoId >= 4
 
-object looseLeptons: union(looseElectrons, looseMuons)
+object looseLeptons
+  take union(looseElectrons, looseMuons)
 
-object tightLeptons: union(tightElectrons, tightMuons)
+object tightLeptons
+  take union(tightElectrons, tightMuons)
 
 object jets
   take Jet
@@ -71,14 +73,14 @@ region baseline
 region SRee
   take baseline
   select HLT_Ele30_WPTight_Gsf
-  select abs(pdgId(looseLeptons[0])) == 11 and abs(pdgId(looseLeptons[0])) == 11
+  select abs(pdgId(looseLeptons[0])) == 11 and abs(pdgId(looseLeptons[1])) == 11
 
 region SRmumu
   take baseline
   select HLT_IsoMu24
-  select abs(pdgId(looseLeptons[0])) == 13 and abs(pdgId(looseLeptons[0])) == 13
+  select abs(pdgId(looseLeptons[0])) == 13 and abs(pdgId(looseLeptons[1])) == 13
 
 region CRemu
   take baseline
   select HLT_IsoMu24
-  select abs(pdgId(looseLeptons[0])) + abs(pdgId(looseLeptons[0])) == 24
+  select abs(pdgId(looseLeptons[0])) + abs(pdgId(looseLeptons[1])) == 24
